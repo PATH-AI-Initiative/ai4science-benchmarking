@@ -1,0 +1,57 @@
+[
+  {
+    "index": 1,
+    "query": "Robust Monte-Carlo Simulations in Diffusion-MRI: Effect of the Substrate Complexity and Parameter Choice on the Reproducibility of Results",
+    "exists": true,
+    "confidence": 1.0,
+    "source": "crossref",
+    "matched_title": "Robust Monte-Carlo Simulations in Diffusion-MRI: Effect of the Substrate Complexity and Parameter Choice on the Reproducibility of Results",
+    "matched_doi": "10.3389/fninf.2020.00008",
+    "matched_year": 2020,
+    "year_mismatch": false
+  },
+  {
+    "index": 2,
+    "query": "A Monte Carlo simulation framework for histology-informed diffusion MRI cancer characterisation and microstructural parameter estimation",
+    "exists": true,
+    "confidence": 1.0,
+    "source": "crossref",
+    "matched_title": "A Monte Carlo simulation framework for histology-informed diffusion MRI parameter estimation in cancer",
+    "matched_doi": null,
+    "matched_year": null,
+    "year_mismatch": false
+  },
+  {
+    "index": 3,
+    "query": "UCL Camino Diffusion MRI Toolkit: Camino",
+    "exists": false,
+    "confidence": 0.699,
+    "source": "crossref",
+    "matched_title": "Camino: Diffusion MRI reconstruction and processing",
+    "matched_doi": null,
+    "matched_year": 2005,
+    "year_mismatch": false
+  },
+  {
+    "index": 4,
+    "query": "Diffusion Microscopist Simulator: A General Monte Carlo Simulation System for Diffusion Magnetic Resonance Imaging",
+    "exists": true,
+    "confidence": 1.0,
+    "source": "crossref",
+    "matched_title": "Diffusion Microscopist Simulator: A General Monte Carlo Simulation System for Diffusion Magnetic Resonance Imaging",
+    "matched_doi": "10.1371/journal.pone.0076626",
+    "matched_year": 2013,
+    "year_mismatch": false
+  },
+  {
+    "index": 5,
+    "query": "An Exploratory Approach to Generate Ground Truths of Neural Fiber Bundles",
+    "exists": false,
+    "confidence": 0.604,
+    "source": "crossref",
+    "matched_title": "A similarity-based approach to generate edge bundles",
+    "matched_doi": null,
+    "matched_year": null,
+    "year_mismatch": false
+  }
+]
