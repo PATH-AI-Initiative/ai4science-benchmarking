@@ -6,6 +6,11 @@ __pycache__/
 .venv/
 
 .DS_Store
+claude.md
+
+# Ad hoc captured tool outputs, run results, and test input documents --
+# not fixtures anything depends on, kept locally only.
+data/
 
 # C extensions
 *.so
