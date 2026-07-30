@@ -1,22 +1,11 @@
 # ai4science-benchmarking
 
-A modular, open-source benchmarking suite for evaluating AI co-scientist tools,
-developed under the Next GenAI Cures programme (FCDO 400868). It implements the
-AI4Cures benchmarking framework, which evaluates tools along four axes:
-
-| Tier | Axis | Role |
-|------|------|------|
-| 1 | **Details & Features** | Descriptive profile. Not scored. Captured before scoring. |
-| 2 | **Accuracy** | Scored. Acts as a **floor** — hypotheses below threshold score no further. |
-| 3 | **Quality** | Scored. **Safety** is a hard **gate** that disqualifies a tool. |
-| 4 | **Scientific Novelty** | Reported as a **separate profile**, never folded into the composite. |
+A modular, open-source benchmarking suite for evaluating AI co-scientist tools.
 
 ## Architecture
 
 The package mirrors the framework: one subpackage per axis, one module per
-metric. A metric is the unit of extension — new checks are contributed by
-dropping a module into an axis package; the scoring layer composes them without
-knowing their internals.
+metric. 
 
 ```
 benchmarking_pipeline/
@@ -90,13 +79,11 @@ or another real model before drawing scientific conclusions.
 If the tool's raw output is already in the JSON shape below, skip to *Scoring*.
 If it's an exported docx/PDF report, draft a captured JSON with an LLM-assisted
 extraction pass first — this is a first draft, not a capture, so review the
-claims and references it pulls out before scoring against it (the Accuracy
-axis is specifically designed to catch hallucinated claims/citations, so an
-unreviewed extraction undermines the thing you're trying to measure):
+claims and references it pulls out before scoring against it:
 
 ```bash
 uv sync --extra anthropic
-export ANTHROPIC_API_KEY=...
+export OPENAI_API_KEY=...
 uv run benchmarking extract --input tool_report.pdf --out captured_output.json
 # review/edit captured_output.json, then proceed to Scoring
 ```
@@ -112,12 +99,6 @@ uv run benchmarking extract --input tool_report.pdf --out captured_output.json \
   --backend ollama --model llama3.1
 ```
 
-No API key and no network call — extraction runs entirely against your local
-Ollama server. Use `--host http://other-host:11434` if Ollama isn't on
-localhost. The same `--judge ollama` / `--embeddings ollama` flags work on
-`benchmarking run` (see below), so the whole pipeline — extraction, logical
-consistency, diversity — can run without any cloud API.
-
 Input capture format (`--output` for `run`, and what `extract` produces):
 
 ```json
@@ -129,19 +110,3 @@ Input capture format (`--output` for `run`, and what `extract` produces):
 }
 ```
 
-### Scoring
-
-```bash
-uv run benchmarking run \
-  --tool "SomeTool" --version v1 \
-  --output captured_output.json \
-  --prompt "artemisinin-resistant Plasmodium knowlesi" \
-  --embeddings specter2 --judge anthropic \
-  --out results.json
-
-# fully local, no cloud API:
-uv run benchmarking run --tool "SomeTool" --output captured_output.json \
-  --prompt "..." --embeddings ollama --judge ollama --out results.json
-
-uv run pytest -q
-```
