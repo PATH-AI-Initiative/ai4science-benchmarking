@@ -1,0 +1,465 @@
+{
+  "tool": "YourTool",
+  "disqualified": false,
+  "disqualified_reason": null,
+  "composite": 0.5888833333333333,
+  "axis_scores": {
+    "accuracy": 0.5888833333333333
+  },
+  "hypotheses": [
+    {
+      "id": "h1",
+      "rank": 1,
+      "passed_accuracy_floor": false,
+      "axis_scores": {
+        "accuracy": 0.35
+      },
+      "results": [
+        {
+          "metric": "citation_accuracy",
+          "axis": "accuracy",
+          "score": null,
+          "anchor": null,
+          "evidence": {
+            "status": "no_references"
+          },
+          "error": null
+        },
+        {
+          "metric": "entity_accuracy",
+          "axis": "accuracy",
+          "score": null,
+          "anchor": null,
+          "evidence": {
+            "status": "not_implemented"
+          },
+          "error": null
+        },
+        {
+          "metric": "epistemic_calibration",
+          "axis": "accuracy",
+          "score": 0.7,
+          "anchor": "mostly calibrated, some mismatches",
+          "evidence": {
+            "n_claims": 2,
+            "n_assessed": 2,
+            "assessed": [
+              {
+                "i": 0,
+                "claim": "The framework is free of critical flaws.",
+                "expressed": "high",
+                "actual": "contested",
+                "calibration": 0.4
+              },
+              {
+                "i": 1,
+                "claim": "Several secondary technical issues and methodological caveats require further resolution.",
+                "expressed": "moderate",
+                "actual": "contested",
+                "calibration": 1.0
+              }
+            ],
+            "unassessed": [],
+            "judge": "ollama:gemma3:12b"
+          },
+          "error": null
+        },
+        {
+          "metric": "logical_consistency",
+          "axis": "accuracy",
+          "score": 0.0,
+          "anchor": "incoherent",
+          "evidence": {
+            "n_claims": 2,
+            "roles": [
+              "background_assumption",
+              "background_assumption"
+            ],
+            "edges_checked": [
+              {
+                "i": 0,
+                "j": 1,
+                "verdict": "contradicts"
+              }
+            ],
+            "n_pairs_skipped_due_to_budget": 0,
+            "consistent_claim_indices": [],
+            "out_claim_indices": [],
+            "undecided_claim_indices": [
+              0,
+              1
+            ],
+            "contradiction_pairs": [
+              {
+                "i": 0,
+                "j": 1,
+                "claim_i": "The framework is free of critical flaws.",
+                "claim_j": "Several secondary technical issues and methodological caveats require further resolution.",
+                "role_i": "background_assumption",
+                "role_j": "background_assumption",
+                "severity": "low"
+              }
+            ],
+            "unresolved_conflicts": {
+              "0": [
+                1
+              ],
+              "1": [
+                0
+              ]
+            },
+            "orphan_claim_indices": [],
+            "judge": "ollama:gemma3:12b"
+          },
+          "error": null
+        },
+        {
+          "metric": "tractability",
+          "axis": "quality",
+          "score": null,
+          "anchor": null,
+          "evidence": {
+            "status": "not_implemented"
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "h2",
+      "rank": 2,
+      "passed_accuracy_floor": true,
+      "axis_scores": {
+        "accuracy": 0.65
+      },
+      "results": [
+        {
+          "metric": "citation_accuracy",
+          "axis": "accuracy",
+          "score": null,
+          "anchor": null,
+          "evidence": {
+            "status": "no_references"
+          },
+          "error": null
+        },
+        {
+          "metric": "entity_accuracy",
+          "axis": "accuracy",
+          "score": null,
+          "anchor": null,
+          "evidence": {
+            "status": "not_implemented"
+          },
+          "error": null
+        },
+        {
+          "metric": "epistemic_calibration",
+          "axis": "accuracy",
+          "score": 0.3,
+          "anchor": "poorly calibrated",
+          "evidence": {
+            "n_claims": 2,
+            "n_assessed": 2,
+            "assessed": [
+              {
+                "i": 0,
+                "claim": "The proposed framework establishes a comprehensive scientific justification for maternal RSV vaccination.",
+                "expressed": "high",
+                "actual": "uncertain",
+                "calibration": 0.0
+              },
+              {
+                "i": 1,
+                "claim": "It links pre-F-specific immunological biomarkers to infant clinical outcomes through a dual-layered protection model.",
+                "expressed": "moderate",
+                "actual": "uncertain",
+                "calibration": 0.6
+              }
+            ],
+            "unassessed": [],
+            "judge": "ollama:gemma3:12b"
+          },
+          "error": null
+        },
+        {
+          "metric": "logical_consistency",
+          "axis": "accuracy",
+          "score": 1.0,
+          "anchor": "fully coherent",
+          "evidence": {
+            "n_claims": 2,
+            "roles": [
+              "background_assumption",
+              "mechanistic_step"
+            ],
+            "edges_checked": [
+              {
+                "i": 0,
+                "j": 1,
+                "verdict": "a_entails_b"
+              }
+            ],
+            "n_pairs_skipped_due_to_budget": 0,
+            "consistent_claim_indices": [
+              0,
+              1
+            ],
+            "out_claim_indices": [],
+            "undecided_claim_indices": [],
+            "contradiction_pairs": [],
+            "unresolved_conflicts": {},
+            "orphan_claim_indices": [],
+            "judge": "ollama:gemma3:12b"
+          },
+          "error": null
+        },
+        {
+          "metric": "tractability",
+          "axis": "quality",
+          "score": null,
+          "anchor": null,
+          "evidence": {
+            "status": "not_implemented"
+          },
+          "error": null
+        }
+      ]
+    },
+    {
+      "id": "h3",
+      "rank": 3,
+      "passed_accuracy_floor": true,
+      "axis_scores": {
+        "accuracy": 0.76665
+      },
+      "results": [
+        {
+          "metric": "citation_accuracy",
+          "axis": "accuracy",
+          "score": null,
+          "anchor": null,
+          "evidence": {
+            "status": "no_references"
+          },
+          "error": null
+        },
+        {
+          "metric": "entity_accuracy",
+          "axis": "accuracy",
+          "score": null,
+          "anchor": null,
+          "evidence": {
+            "status": "not_implemented"
+          },
+          "error": null
+        },
+        {
+          "metric": "epistemic_calibration",
+          "axis": "accuracy",
+          "score": 0.5333,
+          "anchor": "poorly calibrated",
+          "evidence": {
+            "n_claims": 3,
+            "n_assessed": 3,
+            "assessed": [
+              {
+                "i": 0,
+                "claim": "The study employs a weight-adjusted Population Pharmacokinetic (PopPK) model to quantify antibody decay from birth through six months.",
+                "expressed": "high",
+                "actual": "uncertain",
+                "calibration": 0.0
+              },
+              {
+                "i": 1,
+                "claim": "It integrates validatable Fc-receptor binding assays as supportive biomarkers.",
+                "expressed": "moderate",
+                "actual": "contested",
+                "calibration": 1.0
+              },
+              {
+                "i": 2,
+                "claim": "These assays explain why protection against severe disease (MA-LRTI) persists even as neutralizing titers wane.",
+                "expressed": "moderate",
+                "actual": "uncertain",
+                "calibration": 0.6
+              }
+            ],
+            "unassessed": [],
+            "judge": "ollama:gemma3:12b"
+          },
+          "error": null
+        },
+        {
+          "metric": "logical_consistency",
+          "axis": "accuracy",
+          "score": 1.0,
+          "anchor": "fully coherent",
+          "evidence": {
+            "n_claims": 3,
+            "roles": [
+              "background_assumption",
+              "background_assumption",
+              "mechanistic_step"
+            ],
+            "edges_checked": [
+              {
+                "i": 0,
+                "j": 2,
+                "verdict": "neutral"
+              },
+              {
+                "i": 1,
+                "j": 2,
+                "verdict": "neutral"
+              },
+              {
+                "i": 0,
+                "j": 1,
+                "verdict": "neutral"
+              }
+            ],
+            "n_pairs_skipped_due_to_budget": 0,
+            "consistent_claim_indices": [
+              0,
+              1,
+              2
+            ],
+            "out_claim_indices": [],
+            "undecided_claim_indices": [],
+            "contradiction_pairs": [],
+            "unresolved_conflicts": {},
+            "orphan_claim_indices": [
+              2
+            ],
+            "judge": "ollama:gemma3:12b"
+          },
+          "error": null
+        },
+        {
+          "metric": "tractability",
+          "axis": "quality",
+          "score": null,
+          "anchor": null,
+          "evidence": {
+            "status": "not_implemented"
+          },
+          "error": null
+        }
+      ]
+    }
+  ],
+  "set_results": [
+    {
+      "metric": "details_checklist",
+      "axis": "details_features",
+      "score": null,
+      "anchor": null,
+      "evidence": {
+        "profile": {
+          "identity": {
+            "name": "YourTool",
+            "version": "v1",
+            "evaluation_date": null
+          },
+          "accessibility": {
+            "cost_to_useful_hypothesis": null,
+            "compute_requirements": null,
+            "connectivity_requirements": null,
+            "paywall_dependence": null,
+            "language_support": null,
+            "time_to_useful_hypothesis": null
+          },
+          "interface_output": {
+            "input_flexibility": null,
+            "interaction_mode": null,
+            "output_format": null,
+            "hypotheses_per_session": 3
+          },
+          "domain": {
+            "subject_area": null
+          },
+          "knowledge_base": {
+            "breadth": null,
+            "recency": null,
+            "non_english_coverage": null
+          }
+        }
+      },
+      "error": null
+    },
+    {
+      "metric": "adversarial",
+      "axis": "quality",
+      "score": null,
+      "anchor": null,
+      "evidence": {
+        "status": "not_implemented"
+      },
+      "error": null
+    },
+    {
+      "metric": "safety",
+      "axis": "quality",
+      "score": null,
+      "anchor": null,
+      "evidence": {
+        "gate": true,
+        "status": "not_implemented"
+      },
+      "error": null
+    }
+  ],
+  "novelty_profile": [
+    {
+      "metric": "diversity",
+      "axis": "novelty",
+      "score": 0.126,
+      "anchor": "clustered / redundant",
+      "evidence": {
+        "mean_pairwise_similarity": 0.874,
+        "mean_pairwise_distance": 0.126,
+        "n_hypotheses": 3,
+        "embedding_model": "st:allenai/specter2_base"
+      },
+      "error": null
+    },
+    {
+      "metric": "size_of_leap",
+      "axis": "novelty",
+      "score": 0.1009,
+      "anchor": "closely matches existing literature (restatement-like)",
+      "evidence": {
+        "n_hypotheses": 3,
+        "n_assessed": 3,
+        "per_hypothesis": [
+          {
+            "hypothesis_id": "h1",
+            "rank": 1,
+            "distance": 0.1096,
+            "nearest_neighbor_similarity": 0.8904,
+            "nearest_neighbor_title": "Methodological issues (I)"
+          },
+          {
+            "hypothesis_id": "h2",
+            "rank": 2,
+            "distance": 0.0711,
+            "nearest_neighbor_similarity": 0.9289,
+            "nearest_neighbor_title": "Exploring parental perspectives: Maternal RSV vaccination versus infant RSV monoclonal antibody"
+          },
+          {
+            "hypothesis_id": "h3",
+            "rank": 3,
+            "distance": 0.1221,
+            "nearest_neighbor_similarity": 0.8779,
+            "nearest_neighbor_title": "633. Preliminary Results from a Phase 1 Single Ascending-Dose Study Assessing Safety, Serum Viral Neutralizing Antibody Titers (sVNA), and Pharmacokinetic (PK) Profile of ADG20: an Extended Half-Life Monoclonal Antibody Being Developed for the Treatment and Prevention of Coronavirus Disease (COVID-19)"
+          }
+        ],
+        "unassessed": [],
+        "embedding_model": "st:allenai/specter2_base",
+        "note": "distance from existing literature is not itself validity -- interpret alongside the Accuracy axis"
+      },
+      "error": null
+    }
+  ]
+}

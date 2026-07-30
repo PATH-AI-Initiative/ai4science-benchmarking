@@ -1,0 +1,43 @@
+{
+  "hypotheses": [
+    {
+      "id": "h1",
+      "rank": 1,
+      "text": "Kelch13 propeller-domain mutations analogous to those in P. falciparum confer artemisinin resistance in P. knowlesi through reduced ring-stage susceptibility.",
+      "claims": [
+        {
+          "text": "Kelch13 propeller-domain mutations reduce artemisinin susceptibility in Plasmodium species.",
+          "references": [
+            {"raw": "Ariey F, et al. A molecular marker of artemisinin-resistant Plasmodium falciparum malaria. Nature 2014.", "doi": "10.1038/nature12876"}
+          ]
+        },
+        {
+          "text": "P. knowlesi and P. falciparum share sufficient Kelch13 sequence homology for resistance mechanisms to transfer.",
+          "references": []
+        }
+      ]
+    },
+    {
+      "id": "h2",
+      "rank": 2,
+      "text": "Altered phospholipid metabolism in the parasite plasma membrane modulates ring-stage drug tolerance independent of Kelch13 status.",
+      "claims": [
+        {
+          "text": "Lipid remodelling in the ring stage affects membrane permeability to artemisinin derivatives.",
+          "references": []
+        }
+      ]
+    },
+    {
+      "id": "h3",
+      "rank": 3,
+      "text": "Host reticulocyte tropism in P. knowlesi shapes recrudescence dynamics under artemisinin combination therapy pressure, independent of parasite-intrinsic resistance mutations.",
+      "claims": [
+        {
+          "text": "P. knowlesi preferentially invades reticulocytes, a niche with distinct drug exposure kinetics.",
+          "references": []
+        }
+      ]
+    }
+  ]
+}
