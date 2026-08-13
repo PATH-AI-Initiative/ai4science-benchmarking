@@ -48,6 +48,7 @@ from .services.embeddings import (
     OpenAIEmbedding,
     SentenceTransformerEmbedding,
 )
+from .services.biodb import UniProtClient
 from .services.literature import CompositeLiteratureClient, CrossRefClient, SemanticScholarClient
 from .services.llm_judge import AnthropicJudge, OllamaJudge, OpenAIJudge, ProgressJudge
 from .services.structured_chat import AnthropicChat, OllamaChat, OpenAIChat
@@ -81,6 +82,11 @@ _LITERATURE_BACKENDS = {
     "composite": lambda a: CompositeLiteratureClient(mailto=a.literature_mailto),
 }
 
+_BIODB_BACKENDS = {
+    "none": lambda a: None,
+    "uniprot": lambda a: UniProtClient(),
+}
+
 
 def _build_context(args: argparse.Namespace) -> Context:
     embeddings = _EMBEDDING_BACKENDS[args.embeddings](args)
@@ -92,8 +98,9 @@ def _build_context(args: argparse.Namespace) -> Context:
         # feedback against a silent, possibly multi-minute wait.
         judge = ProgressJudge(judge)
     literature = _LITERATURE_BACKENDS[args.literature](args)
+    biodb = _BIODB_BACKENDS[args.biodb](args)
     config = RunConfig(multi_run_comparison=args.multi_run_comparison)
-    return Context(config=config, embeddings=embeddings, judge=judge, literature=literature)
+    return Context(config=config, embeddings=embeddings, judge=judge, literature=literature, biodb=biodb)
 
 
 def _cmd_extract(args: argparse.Namespace) -> int:
@@ -212,6 +219,10 @@ def main(argv: list[str] | None = None) -> int:
                             "falls back to Semantic Scholar for low-confidence matches.")
     run_p.add_argument("--literature-mailto", default=None,
                        help="email for CrossRef's polite pool (optional; higher rate limits)")
+    run_p.add_argument("--biodb", choices=sorted(_BIODB_BACKENDS), default="none",
+                       help="biological database client for entity_accuracy (default: none -> "
+                            "reports 'not assessed'). 'uniprot' resolves gene/protein entities "
+                            "against UniProtKB.")
     run_p.add_argument("--out", type=Path, default=None,
                        help="write results JSON here (default: stdout)")
     run_p.set_defaults(func=_cmd_run)
