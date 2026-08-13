@@ -20,6 +20,9 @@ openai = ["openai>=1.40"]
 ollama = ["ollama>=0.4"]
 # Local scientific embedding backends (SPECTER2, SciBERT, general models).
 local-embeddings = ["sentence-transformers>=3.0"]
+# Exploratory notebooks (e.g. embedding visualization) -- not needed to run
+# the pipeline itself.
+notebooks = ["jupyter>=1.0", "ipykernel>=6.29", "matplotlib>=3.9", "scikit-learn>=1.5"]
 
 [build-system]
 requires = ["hatchling"]

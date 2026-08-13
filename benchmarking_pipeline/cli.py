@@ -15,8 +15,12 @@ Bundle run (adds reproducibility/robustness — needs repeated and/or perturbed
 captures of the same prompt):
     benchmarking run --tool "..." --output base.json --prompt "..." \\
         --repeat repeat1.json --repeat repeat2.json \\
-        --perturb reword=reword1.json --perturb kb_removal=kb1.json \\
+        --perturb reword=reword1.json \\
         --embeddings specter2 --out results.json
+    # --perturb also accepts kb_removal=... (a capture from a knowledge-base-
+    # removed run), reported by robustness for interpretation but never
+    # scored -- omitted from the example above since no tool we've evaluated
+    # currently exposes a way to tweak its knowledge base.
 
 Loads captured tool output(s) and runs the full evaluation.
 """
@@ -175,8 +179,11 @@ def main(argv: list[str] | None = None) -> int:
                        help="captured output from an identical repeat run "
                             "(repeatable; enables reproducibility)")
     run_p.add_argument("--perturb", action="append", default=[],
-                       help="TYPE=path.json, e.g. reword=out2.json or kb_removal=out3.json "
-                            "(repeatable; enables robustness)")
+                       help="TYPE=path.json, e.g. reword=out2.json (repeatable; enables "
+                            "robustness). TYPE also accepts kb_removal, reported for "
+                            "interpretation but never scored -- not shown as a primary "
+                            "example since no tool we've evaluated currently exposes a "
+                            "way to tweak its knowledge base")
     run_p.add_argument("--multi-run-comparison", choices=["whole_set", "top_hypothesis"],
                        default="whole_set",
                        help="what reproducibility/robustness compare across runs (default: "

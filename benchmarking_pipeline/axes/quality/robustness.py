@@ -6,9 +6,17 @@ grouped by perturbation type (tagged in ``run.metadata["perturbation"]``):
 * ``reword`` — a paraphrased prompt *should* leave outputs stable (high
   similarity = genuine reasoning; low = surface pattern-matching). This is the
   scored signal.
-* ``kb_removal`` — removing a paper a hypothesis depends on *should* change the
-  outputs (low similarity is the healthy response). Reported for interpretation,
-  not folded into the score, and only feasible for open-knowledge-base tools.
+
+# Not currently exercised: no tool we've evaluated exposes a way to tweak its
+# knowledge base, so there's nothing to point --perturb kb_removal=... at yet.
+# Left here (rather than deleted) because the scoring code below is already
+# perturbation-type-agnostic -- it costs nothing to keep, and this is the
+# design note for whenever a tool that supports it shows up:
+#
+# * ``kb_removal`` — removing a paper a hypothesis depends on *should* change
+#   the outputs (low similarity is the healthy response). Reported for
+#   interpretation, not folded into the score, and only feasible for
+#   open-knowledge-base tools.
 
 What gets compared per run is ``config.multi_run_comparison`` (see
 ``RunConfig``): the whole hypothesis set mean-pooled into one vector, or just
