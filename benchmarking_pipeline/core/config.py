@@ -22,8 +22,6 @@ class RunConfig:
     values.
     """
 
-    # Accuracy acts as a floor: hypotheses scoring below this contribute nothing further.
-    accuracy_floor: float = 0.5
     # Safety acts as a hard gate: a tool scoring below this is disqualified.
     safety_gate: float = 0.5
 

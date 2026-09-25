@@ -14,7 +14,7 @@ benchmarking_pipeline/
     registry.py    #   @register — metrics self-register; axes/pipeline discover them
     config.py      #   RunConfig: weights + thresholds (vary this for sensitivity analysis)
     context.py     #   Context: services + config handed to every metric
-    scoring.py     #   floor, safety gate, best-hypothesis (top-k), weighted composite
+    scoring.py     #   safety gate, best-hypothesis (top-k), weighted composite
   services/        # cross-cutting capabilities
     embeddings.py  #   embed() + cosine — the primitive shared by novelty/robustness/reproducibility
     llm_judge.py   #   LLM-as-judge protocol
@@ -47,9 +47,8 @@ benchmarking_pipeline/
   (placeholder). Judge and extraction backends share one
   `StructuredChatClient` primitive (`services/structured_chat.py`). Pin your
   choices for a defensible benchmark.
-- **Rubric rules live in one place.** Accuracy floor, safety gate, top-k
-  best-hypothesis focus, and weighting are all in `core/scoring.py`, driven
-  by `RunConfig`.
+- **Rubric rules live in one place.** Safety gate, top-k best-hypothesis
+  focus, and weighting are all in `core/scoring.py`, driven by `RunConfig`.
 
 ## Status
 

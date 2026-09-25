@@ -11,13 +11,12 @@ from benchmarking_pipeline.report.results import COMPOSITE_CAVEAT, to_dict
 
 
 def test_to_dict_carries_composite_caveat_and_config():
-    config = RunConfig(accuracy_floor=0.4, top_k_hypotheses=2)
+    config = RunConfig(top_k_hypotheses=2)
     score = aggregate_tool_score("t", [], [], [], config)
 
     d = to_dict(score)
 
     assert d["composite_caveat"] == COMPOSITE_CAVEAT
-    assert d["config"]["accuracy_floor"] == 0.4
     assert d["config"]["top_k_hypotheses"] == 2
     assert d["config"]["axis_weights"] == {"accuracy": 0.5, "quality": 0.5}
 
@@ -37,16 +36,16 @@ def test_hypothesis_metric_coverage_surfaces_a_thin_sample():
     per-hypothesis results list, so it must be visible at the top level too."""
     hyp_scores = [
         HypothesisScore(
-            hypothesis_id="h1", rank=1, passed_accuracy_floor=True,
+            hypothesis_id="h1", rank=1,
             results=[MetricResult(metric="citation_accuracy", axis=Axis.ACCURACY, score=1.0)],
         ),
         HypothesisScore(
-            hypothesis_id="h2", rank=2, passed_accuracy_floor=True,
+            hypothesis_id="h2", rank=2,
             results=[MetricResult(metric="citation_accuracy", axis=Axis.ACCURACY, score=None,
                                   evidence={"status": "no_references"})],
         ),
         HypothesisScore(
-            hypothesis_id="h3", rank=3, passed_accuracy_floor=True,
+            hypothesis_id="h3", rank=3,
             results=[MetricResult(metric="citation_accuracy", axis=Axis.ACCURACY, score=None,
                                   evidence={"status": "no_references"})],
         ),

@@ -31,7 +31,7 @@ def _metric_result(metric, axis, score):
 
 
 def _hyp(hyp_id, results):
-    return {"id": hyp_id, "rank": 1, "passed_accuracy_floor": True, "axis_scores": {}, "results": results}
+    return {"id": hyp_id, "rank": 1, "axis_scores": {}, "results": results}
 
 
 def test_composite_and_disqualified_merge():
@@ -134,19 +134,19 @@ def test_composite_caveat_present_in_comparison_output():
 
 
 def test_config_mismatch_detected_and_flagged():
-    a = _result("A", composite=0.7, config={"accuracy_floor": 0.5})
-    b = _result("B", composite=0.6, config={"accuracy_floor": 0.3})
+    a = _result("A", composite=0.7, config={"safety_gate": 0.5})
+    b = _result("B", composite=0.6, config={"safety_gate": 0.3})
 
     out = compare([a, b])
 
     assert out["config_mismatch"] is True
     assert "not directly comparable" in out["config_mismatch_warning"]
-    assert out["configs"] == {"A": {"accuracy_floor": 0.5}, "B": {"accuracy_floor": 0.3}}
+    assert out["configs"] == {"A": {"safety_gate": 0.5}, "B": {"safety_gate": 0.3}}
 
 
 def test_same_config_across_tools_not_flagged():
-    a = _result("A", composite=0.7, config={"accuracy_floor": 0.5})
-    b = _result("B", composite=0.6, config={"accuracy_floor": 0.5})
+    a = _result("A", composite=0.7, config={"safety_gate": 0.5})
+    b = _result("B", composite=0.6, config={"safety_gate": 0.5})
 
     out = compare([a, b])
 

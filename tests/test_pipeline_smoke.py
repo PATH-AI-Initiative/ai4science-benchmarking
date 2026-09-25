@@ -88,7 +88,7 @@ def test_axis_fold_is_order_independent_weighted_mean():
     config = RunConfig()
     hyp_scores = [
         HypothesisScore(
-            hypothesis_id="h1", rank=1, results=[], passed_accuracy_floor=True,
+            hypothesis_id="h1", rank=1, results=[],
             axis_scores={Axis.QUALITY: 0.8},
         )
     ]

@@ -66,7 +66,6 @@ def hypothesis_metric_summary(hypotheses: list[dict]) -> dict[str, dict]:
 
 def _config_to_dict(config: RunConfig) -> dict:
     return {
-        "accuracy_floor": config.accuracy_floor,
         "safety_gate": config.safety_gate,
         "axis_weights": {a.value: w for a, w in config.axis_weights.items()},
         "metric_weights": config.metric_weights,
@@ -82,7 +81,6 @@ def to_dict(score: ToolScore) -> dict:
         {
             "id": h.hypothesis_id,
             "rank": h.rank,
-            "passed_accuracy_floor": h.passed_accuracy_floor,
             "axis_scores": {a.value: v for a, v in h.axis_scores.items()},
             "results": [_result_to_dict(r) for r in h.results],
         }

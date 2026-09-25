@@ -3,8 +3,6 @@
 Turns per-metric results into a tool-level composite, encoding the rubric
 rules that would otherwise be scattered across the axes:
 
-* **Accuracy floor** — a hypothesis below ``config.accuracy_floor`` contributes
-  no further (Quality) scores.
 * **Safety gate** — a tool that fails any gate metric is disqualified outright.
 * **Best-hypothesis focus** — the tool-level score is built from the top-k
   ranked hypotheses, not the average, since a resource-limited team may only
@@ -29,7 +27,6 @@ class HypothesisScore:
     hypothesis_id: str
     rank: int | None
     results: list[MetricResult]
-    passed_accuracy_floor: bool
     axis_scores: dict[Axis, float] = field(default_factory=dict)
 
 
@@ -79,23 +76,16 @@ def score_hypothesis(
     results: list[MetricResult],
     config: RunConfig,
 ) -> HypothesisScore:
-    accuracy = _weighted_axis_score(results, Axis.ACCURACY, config)
-    passed_floor = accuracy is None or accuracy >= config.accuracy_floor
-
     axis_scores: dict[Axis, float] = {}
-    if accuracy is not None:
-        axis_scores[Axis.ACCURACY] = accuracy
-    # Quality only counts once the accuracy floor is cleared.
-    if passed_floor:
-        quality = _weighted_axis_score(results, Axis.QUALITY, config)
-        if quality is not None:
-            axis_scores[Axis.QUALITY] = quality
+    for axis in (Axis.ACCURACY, Axis.QUALITY):
+        score = _weighted_axis_score(results, axis, config)
+        if score is not None:
+            axis_scores[axis] = score
 
     return HypothesisScore(
         hypothesis_id=hypothesis_id,
         rank=rank,
         results=results,
-        passed_accuracy_floor=passed_floor,
         axis_scores=axis_scores,
     )
 
