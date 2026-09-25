@@ -43,6 +43,13 @@ class ToolScore:
     hypothesis_scores: list[HypothesisScore]
     set_results: list[MetricResult]
     novelty_profile: list[MetricResult]
+    # The settings this score was actually produced under. Weights/thresholds
+    # here are placeholders until derived through structured expert
+    # elicitation (see RunConfig's own docstring) -- carrying the config
+    # alongside the score keeps that caveat attached to the number itself,
+    # and lets a comparison across tools check they were scored under the
+    # same settings rather than silently comparing apples to oranges.
+    config: RunConfig
 
 
 def _mean(values: list[float]) -> float | None:
@@ -120,6 +127,7 @@ def aggregate_tool_score(
                     hypothesis_scores=hypothesis_scores,
                     set_results=set_results,
                     novelty_profile=novelty_profile,
+                    config=config,
                 )
 
     top = _top_k(hypothesis_scores, config.top_k_hypotheses)
@@ -164,4 +172,5 @@ def aggregate_tool_score(
         hypothesis_scores=hypothesis_scores,
         set_results=set_results,
         novelty_profile=novelty_profile,
+        config=config,
     )

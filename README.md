@@ -30,7 +30,7 @@ benchmarking_pipeline/
     quality/           # Tier 3 — robustness, reproducibility, adversarial, tractability, safety
     novelty/           # Tier 4 — size of leap, diversity
   pipeline.py      # prompt -> adapter -> axes -> scoring
-  report/          # JSON results + (planned) plain-language Playbook
+  report/          # JSON results
   cli.py           # `benchmarking run ...`
 ```
 
@@ -56,11 +56,12 @@ benchmarking_pipeline/
 ## Status
 
 Runnable skeleton. Fully implemented: the core abstractions, scoring layer,
-Tier 1 checklist, the `diversity` novelty metric, and the `reproducibility` and
-`robustness` multi-run metrics (all embedding-based). `citation_accuracy` is
-implemented but needs a literature client attached. Every other metric is a
-registered stub returning a "not assessed" result, with its planned
-implementation described in its module docstring.
+Tier 1 checklist, the `diversity` novelty metric, and the `reproducibility`,
+`robustness`, and `adversarial` multi-run metrics (embedding-based, except
+`adversarial` which is judge-based and needs `--adversarial-ground-truth`).
+`citation_accuracy` is implemented but needs a literature client attached.
+Every other metric is a registered stub returning a "not assessed" result,
+with its planned implementation described in its module docstring.
 
 Multi-run metrics are scored via `evaluate_bundle(RunBundle, ctx)`, where a
 `RunBundle` collects a base run plus repeated and/or perturbed runs.

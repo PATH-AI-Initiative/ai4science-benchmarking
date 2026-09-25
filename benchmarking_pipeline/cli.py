@@ -21,6 +21,14 @@ captures of the same prompt):
     # removed run), reported by robustness for interpretation but never
     # scored -- omitted from the example above since no tool we've evaluated
     # currently exposes a way to tweak its knowledge base.
+    # --perturb also accepts adversarial_<trap_type>=... (a capture from a
+    # trap-seeded prompt, e.g. adversarial_retracted_paper=trap1.json) plus
+    # --adversarial-ground-truth traps.json, enabling the `adversarial` metric.
+
+Compare multiple tools' results side by side (each produced by a separate
+`benchmarking run --out ...` above):
+    benchmarking compare toolA_results.json toolB_results.json toolC_results.json \\
+        --out comparison.json
 
 Loads captured tool output(s) and runs the full evaluation.
 """
@@ -39,7 +47,7 @@ from .io.extraction import extract_hypotheses
 from .io.readers import read_document_text
 from .io.tool_adapters.file_adapter import FileAdapter
 from .pipeline import evaluate, evaluate_bundle
-from .report import results
+from .report import compare, results
 from .services.embeddings import (
     SCIBERT,
     SPECTER2,
@@ -99,7 +107,13 @@ def _build_context(args: argparse.Namespace) -> Context:
         judge = ProgressJudge(judge)
     literature = _LITERATURE_BACKENDS[args.literature](args)
     biodb = _BIODB_BACKENDS[args.biodb](args)
-    config = RunConfig(multi_run_comparison=args.multi_run_comparison)
+    adversarial_traps = (
+        json.loads(args.adversarial_ground_truth.read_text())
+        if args.adversarial_ground_truth else None
+    )
+    config = RunConfig(
+        multi_run_comparison=args.multi_run_comparison, adversarial_traps=adversarial_traps
+    )
     return Context(config=config, embeddings=embeddings, judge=judge, literature=literature, biodb=biodb)
 
 
@@ -143,6 +157,16 @@ def _cmd_run(args: argparse.Namespace) -> int:
         print(f"Results written to {args.out}", file=sys.stderr)
     else:
         print(json.dumps(results.to_dict(score), indent=2))
+    return 0
+
+
+def _cmd_compare(args: argparse.Namespace) -> int:
+    comparison = compare.load_and_compare(args.results)
+    if args.out:
+        compare.write_json(comparison, args.out)
+        print(f"Comparison written to {args.out}", file=sys.stderr)
+    else:
+        print(json.dumps(comparison, indent=2))
     return 0
 
 
@@ -223,9 +247,23 @@ def main(argv: list[str] | None = None) -> int:
                        help="biological database client for entity_accuracy (default: none -> "
                             "reports 'not assessed'). 'uniprot' resolves gene/protein entities "
                             "against UniProtKB.")
+    run_p.add_argument("--adversarial-ground-truth", type=Path, default=None,
+                       help="JSON file mapping perturbation type -> planted-issue description "
+                            "(e.g. {\"adversarial_retracted_paper\": \"...\"}), enables the "
+                            "`adversarial` metric for --perturb captures tagged with a matching "
+                            "type (default: none -> reports 'not assessed')")
     run_p.add_argument("--out", type=Path, default=None,
                        help="write results JSON here (default: stdout)")
     run_p.set_defaults(func=_cmd_run)
+
+    compare_p = sub.add_parser(
+        "compare", help="merge multiple tools' results.json into one side-by-side comparison"
+    )
+    compare_p.add_argument("results", nargs="+", type=Path,
+                           help="two or more results.json files produced by `benchmarking run`")
+    compare_p.add_argument("--out", type=Path, default=None,
+                           help="write comparison JSON here (default: stdout)")
+    compare_p.set_defaults(func=_cmd_compare)
 
     args = parser.parse_args(argv)
     return args.func(args)

@@ -37,6 +37,10 @@ entirely offline if that's what the workflow needs.
 
 from __future__ import annotations
 
+import json
+import re
+from pathlib import Path
+
 from ..core.models import ClaimRole
 from ..services.structured_chat import StructuredChatClient
 
@@ -202,12 +206,31 @@ _EXTRACTION_SYSTEM_PROMPT = (
     "Never invent content that is not present in the source text."
 )
 
+# Fixed after finding an earlier version of this prompt indiscriminately pulled every
+# numbered bullet out of a literature-review-style report's "Key Findings"/
+# "Recommendations" sections -- background facts ("no resistance has been
+# documented...") and generic process recommendations ("expand surveillance")
+# alongside genuine proposed therapies, inflating one real report's count
+# from a handful of actual hypotheses to 17 mostly-non-hypothesis items.
 _HYPOTHESIS_LIST_PROMPT = """\
 You are preparing a co-scientist tool's raw output for a benchmarking pipeline.
 Below is the raw text exported from the tool. Identify the distinct hypotheses
 it proposes, in the order/ranking the tool presented them, WITHOUT decomposing
 their claims yet (a later pass handles that per hypothesis) -- just identify
 each one and its top-level metadata.
+
+A hypothesis is a SPECIFIC PROPOSED THERAPEUTIC STRATEGY OR INTERVENTION the
+tool is putting forward as worth pursuing -- e.g. a drug, drug combination,
+molecular target, or treatment approach a scientist could go test or develop.
+It is NOT: a background fact or finding (e.g. "no resistance has been
+documented in this species"), a summary of existing literature or evidence, a
+caveat or limitation, or a generic process recommendation that doesn't itself
+propose a new intervention (e.g. "expand molecular surveillance", "maintain
+current first-line therapy", "fund vector control"). Some tools write a
+literature-review-style report with sections like "Key Findings" or
+"Recommendations" that mix these together -- extract ONLY the items that
+propose a specific new therapeutic strategy, and skip everything else, even
+when it appears in the same numbered list as genuine hypotheses.
 
 If the tool groups hypotheses under section headings (e.g. categories or
 themes rather than a flat rank), record that heading verbatim as `category`.
@@ -296,4 +319,118 @@ def extract_hypotheses(raw_text: str, chat: StructuredChatClient, *, max_tokens:
     for hyp in hypotheses:
         hyp["claims"] = extract_claims(hyp["text"], raw_text, chat, max_tokens=max_tokens)
 
-    return {"hypotheses": hypotheses}
+    # Carried through verbatim (not LLM-processed) so metrics that need the
+    # tool's full output -- not just the structured hypotheses -- have it
+    # available (e.g. `adversarial`, which needs to see prose outside the
+    # enumerated hypotheses to catch a tool addressing a planted trap there).
+    return {"raw_text": raw_text, "hypotheses": hypotheses}
+
+
+def _kaimen_hyp_rank_order(overview_text: str) -> dict[str, int]:
+    """Kaimen's ``final/overview.md`` cites each hypothesis by id once, under
+    a "Direction N" heading -- that order *is* the tool's final tournament
+    ranking (Direction 1 = rank 1). Reading it from the overview rather than
+    the session's SQLite DB keeps this self-contained to files already
+    captured, not a live dependency on Kaimen's own database.
+
+    The overview is itself LLM-written (the meta-review step), so it doesn't
+    reliably use one citation format -- observed variants include
+    ``[H-hyp_84e7b925478c9ada]`` and plain `` `hyp_84e7b925478c9ada` `` with no
+    ``H-`` prefix or brackets at all. Matching the bare id regardless of
+    whatever decoration surrounds it avoids silently returning an empty
+    mapping (and every hypothesis collapsing to the same fallback rank) the
+    next time the wording varies again.
+    """
+    order: dict[str, int] = {}
+    for match in re.finditer(r"\bhyp_[0-9a-f]+\b", overview_text):
+        hyp_id = match.group(0)
+        if hyp_id not in order:
+            order[hyp_id] = len(order) + 1
+    return order
+
+
+def extract_kaimen_session(
+    session_dir: str | Path, chat: StructuredChatClient, *, max_tokens: int = 8192,
+) -> dict:
+    """Build a capture dict (same shape :func:`extract_hypotheses` returns) from
+    a Kaimen co-scientist session directory: ``final/overview.md``,
+    ``hypotheses/*.json``, ``reviews/*.json`` (``transcripts/`` is the internal
+    agent trace, not needed here).
+
+    Unlike :func:`extract_hypotheses`, most of this is a direct field mapping,
+    not an LLM call -- Kaimen's hypothesis records already come structured
+    (title, statement, entities, citations), so re-extracting them from prose
+    would be redundant and riskier than just reading the fields. The one
+    exception is ``mechanism`` (plus ``anticipated_outcomes``/
+    ``novelty_argument``): free-text argument that still needs LLM
+    decomposition into premise/mechanistic_step/prediction/background_assumption
+    -tagged claims for `logical_consistency` -- without it, each hypothesis
+    would carry only its single top-level statement as a "claim", far coarser
+    than the 10+ claims Biomni/Claude's reports decompose into, which would
+    make `logical_consistency` far less powerful for Kaimen as a parser
+    artifact rather than a real difference between tools.
+
+    Citations and entities are hypothesis-level in Kaimen's data (not tied to
+    a specific decomposed claim), so they're attached to a synthetic claim
+    whose text is the hypothesis's own top-level ``statement`` -- rather than
+    guessed onto one of the LLM-decomposed sub-claims, which would risk
+    misattributing a citation to a claim it doesn't actually support.
+    """
+    session_dir = Path(session_dir)
+    overview_text = (session_dir / "final" / "overview.md").read_text()
+    rank_order = _kaimen_hyp_rank_order(overview_text)
+
+    reviews_by_hyp_id: dict[str, dict] = {}
+    for review_file in sorted((session_dir / "reviews").glob("*.json")):
+        review_json = json.loads(review_file.read_text())
+        reviews_by_hyp_id[review_json["hypothesis_id"]] = review_json.get("record", {})
+
+    hypotheses = []
+    for hyp_file in sorted((session_dir / "hypotheses").glob("*.json")):
+        hyp_id = hyp_file.stem
+        record = json.loads(hyp_file.read_text())["record"]
+        review = reviews_by_hyp_id.get(hyp_id, {})
+
+        argument_text = record.get("mechanism", "")
+        if record.get("anticipated_outcomes"):
+            argument_text += "\n\nAnticipated outcomes: " + record["anticipated_outcomes"]
+        if record.get("novelty_argument"):
+            argument_text += "\n\nNovelty argument: " + record["novelty_argument"]
+        decomposed_claims = (
+            extract_claims(record["statement"], argument_text, chat, max_tokens=max_tokens)
+            if argument_text.strip() else []
+        )
+
+        statement_claim = {
+            "text": record["statement"],
+            "role": None,
+            "references": [
+                {"raw": c.get("url", ""), "title": c.get("title", ""),
+                 "doi": "", "year": "", "authors": []}
+                for c in record.get("citations", [])
+            ],
+            "entities": [{"name": e, "kind": ""} for e in record.get("entities", [])],
+        }
+
+        hypotheses.append({
+            "id": hyp_id,
+            "text": f"{record.get('title', '')}: {record['statement']}",
+            "rank": rank_order.get(hyp_id, len(rank_order) + 1),
+            "category": None,
+            "claims": [statement_claim, *decomposed_claims],
+            "self_reported": {
+                "novelty_tier": str(review["novelty"]) if review.get("novelty") is not None else "",
+                "novelty_rationale": "",
+                "feasibility_tier": (
+                    str(review["feasibility"]) if review.get("feasibility") is not None else ""
+                ),
+                "feasibility_rationale": review.get("notes") or "",
+                "key_risks": [
+                    a["assumption"] for a in review.get("assumptions", [])
+                    if a.get("plausibility") == "uncertain"
+                ],
+            },
+        })
+
+    hypotheses.sort(key=lambda h: h["rank"])
+    return {"raw_text": overview_text, "hypotheses": hypotheses}

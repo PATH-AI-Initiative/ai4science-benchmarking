@@ -3,7 +3,9 @@
 Acts as a floor for the whole rubric: a hypothesis below the accuracy threshold
 contributes no further scores. Metrics:
 
-* ``citation_accuracy`` — do cited sources exist and support the statement?
+* ``citation_accuracy`` — do cited sources actually exist?
+* ``citation_support`` — do those sources actually support the claims they're
+  attached to?
 * ``entity_accuracy`` — are genes/proteins/pathways real and correctly related?
 * ``epistemic_calibration`` — does the tool distinguish established, contested,
   and uncertain claims?
@@ -11,4 +13,10 @@ contributes no further scores. Metrics:
   contradiction?
 """
 
-from . import citation_accuracy, entity_accuracy, epistemic_calibration, logical_consistency  # noqa: F401,E501
+from . import (  # noqa: F401,E501
+    citation_accuracy,
+    citation_support,
+    entity_accuracy,
+    epistemic_calibration,
+    logical_consistency,
+)

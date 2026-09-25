@@ -8,6 +8,7 @@ A minimal JSON parser is provided to make the pipeline runnable. The expected
 shape is::
 
     {
+      "raw_text": "...",
       "hypotheses": [
         {"id": "h1", "text": "...", "rank": 1, "category": "...",
          "claims": [{"text": "...", "role": "premise",
@@ -23,6 +24,7 @@ metric classifies it lazily via the judge when absent. ``category``,
 have them; ``self_reported`` (a tool's own novelty/feasibility self-assessment,
 if it makes one) lands in ``Hypothesis.metadata``, not in ``claims``, since
 it's the tool's own judgment rather than a scientific claim to be checked.
+Top-level ``raw_text`` is also optional -- see :func:`parse_raw_text`.
 """
 
 from __future__ import annotations
@@ -95,3 +97,11 @@ def parse_dict(data: dict) -> HypothesisSet:
 
 def parse_json(path: str | Path) -> HypothesisSet:
     return parse_dict(json.loads(Path(path).read_text()))
+
+
+def parse_raw_text(path: str | Path) -> str | None:
+    """The capture's top-level ``raw_text``, if present (populated by
+    :func:`~benchmarking_pipeline.io.extraction.extract_hypotheses`; absent in
+    older captures or hand-written ones). Separate from :func:`parse_json` so
+    that function's return type stays a plain ``HypothesisSet``."""
+    return json.loads(Path(path).read_text()).get("raw_text")

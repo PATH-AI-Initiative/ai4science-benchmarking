@@ -61,3 +61,9 @@ class RunConfig:
     #                       focus, but assumes rank 1 means the same thing run
     #                       to run.
     multi_run_comparison: Literal["whole_set", "top_hypothesis"] = "whole_set"
+
+    # Perturbation-type -> planted-issue description, for the ``adversarial``
+    # metric (e.g. {"adversarial_retracted_paper": "cites the retracted ..."}).
+    # None/empty -> adversarial reports "not assessed" rather than guessing
+    # what was planted in a given perturbation capture.
+    adversarial_traps: dict[str, str] | None = None

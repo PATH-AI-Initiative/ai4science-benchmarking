@@ -10,7 +10,7 @@ from datetime import date
 from pathlib import Path
 
 from ...core.models import EvaluationRun, Tool
-from ..parsers import parse_json
+from ..parsers import parse_json, parse_raw_text
 
 
 class FileAdapter:
@@ -29,4 +29,5 @@ class FileAdapter:
             outputs=outputs,
             evaluated_on=self.evaluated_on,
             metadata={"source_file": str(self.output_path)},
+            raw_text=parse_raw_text(self.output_path),
         )

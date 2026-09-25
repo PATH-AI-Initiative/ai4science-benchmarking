@@ -23,6 +23,22 @@ What gets compared per run is ``config.multi_run_comparison`` (see
 the rank-1 hypothesis. Not yet settled which is the better default — both are
 available.
 
+In ``top_hypothesis`` mode specifically, embedding similarity turns out not to
+discriminate much at all (see ``reproducibility.py`` for the measurement this
+was found against: two unrelated research questions embed ~0.83, two runs
+proposing completely different drugs for the *identical* question still embed
+0.91-0.96). So when a judge is available, the *scored* signal is
+``reword_mechanism_match_rate`` -- not embedding similarity, and not a plain
+rank-1-vs-rank-1 match either: base's top idea reappearing at rank 2 in a
+reworded run is a different (better) outcome than it vanishing outright.
+Each perturbation run is checked via :func:`_shared.mechanism_match_credit`
+against base's top-``config.top_k_hypotheses``, credited by how far down the
+matching idea dropped. Embedding similarity
+(``reword_stability``/``similarity_by_perturbation``) is still computed and
+reported in full, just not treated as if it discriminates robustness on its
+own. Falls back to the embedding-based score when there's no judge, or in
+``whole_set`` mode.
+
 Implemented as a :class:`MultiRunMetric`: it reads ``bundle.base`` + ``bundle.perturbations``.
 """
 
@@ -33,7 +49,7 @@ from ...core.metric import Axis, MetricResult, MultiRunMetric
 from ...core.models import RunBundle
 from ...core.registry import register
 from ...services.embeddings import cosine_similarity
-from ._shared import run_vector
+from ._shared import mechanism_anchor, mechanism_match_credit, run_vector, top_k_hypotheses
 
 
 @register
@@ -57,7 +73,12 @@ class Robustness(MultiRunMetric):
                 evidence={"status": "base_run_returned_no_hypotheses", "comparison_unit": comparison},
             )
 
+        check_mechanism = comparison == "top_hypothesis" and ctx.judge is not None
+        top_k = ctx.config.top_k_hypotheses
+        base_top_k = top_k_hypotheses(bundle.base.outputs, top_k) if check_mechanism else []
+
         by_type: dict[str, list[float]] = {}
+        mechanism_by_type: dict[str, list[dict]] = {}
         for run in bundle.perturbations:
             vec = run_vector(run, ctx)
             if vec is None:
@@ -65,19 +86,49 @@ class Robustness(MultiRunMetric):
             ptype = run.metadata.get("perturbation", "reword")
             by_type.setdefault(ptype, []).append(cosine_similarity(base_vec, vec))
 
-        # Stability under rewording is the scored signal (higher = more robust).
+            if check_mechanism and base_top_k:
+                other_top_k = top_k_hypotheses(run.outputs, top_k)
+                if other_top_k:
+                    credit, detail = mechanism_match_credit(ctx.judge, base_top_k, other_top_k)
+                    mechanism_by_type.setdefault(ptype, []).append({"credit": credit, **detail})
+
+        # Embedding-based stability under rewording -- always computed and
+        # reported, but see the module docstring for why it isn't trusted as
+        # the scored signal on its own when mechanism-match is available.
         reword_sims = by_type.get("reword", [])
-        score = round(sum(reword_sims) / len(reword_sims), 4) if reword_sims else None
+        reword_stability = round(sum(reword_sims) / len(reword_sims), 4) if reword_sims else None
+
+        reword_mechanisms = mechanism_by_type.get("reword", [])
+        reword_mechanism_match_rate = (
+            round(sum(m["credit"] for m in reword_mechanisms) / len(reword_mechanisms), 4)
+            if reword_mechanisms else None
+        )
+
+        if reword_mechanism_match_rate is not None:
+            score = reword_mechanism_match_rate
+            anchor = mechanism_anchor(
+                reword_mechanism_match_rate, reword_stability,
+                labels=("stable under rewording", "partially stable",
+                        "unstable under rewording"),
+            )
+            score_basis = "reword_mechanism_match_rate"
+        else:
+            score = reword_stability
+            anchor = _anchor(score) if score is not None else None
+            score_basis = "reword_stability" if score is not None else None
 
         return MetricResult(
             metric=self.name, axis=self.axis, score=score,
-            anchor=_anchor(score) if score is not None else None,
+            anchor=anchor,
             evidence={
+                "score_basis": score_basis,
                 "comparison_unit": comparison,
-                "reword_stability": score,
+                "reword_stability": reword_stability,
                 "similarity_by_perturbation": {
                     k: [round(s, 4) for s in v] for k, v in by_type.items()
                 },
+                "reword_mechanism_match_rate": reword_mechanism_match_rate,
+                "mechanism_match_by_perturbation": mechanism_by_type or None,
                 "embedding_model": ctx.embeddings.name,
                 "note": "kb_removal similarities reported for interpretation, not scored",
             },

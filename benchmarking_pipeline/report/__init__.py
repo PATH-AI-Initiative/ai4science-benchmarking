@@ -1,5 +1,5 @@
-"""Turning a ToolScore into outputs: machine-readable results (JSON) and the
-plain-language AI4Science Playbook rendering.
+"""Turning a ToolScore into outputs: machine-readable results (JSON), plus
+merging multiple tools' results into one comparison (``compare``).
 """
 
-from . import results  # noqa: F401
+from . import compare, results  # noqa: F401

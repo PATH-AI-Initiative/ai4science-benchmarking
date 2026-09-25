@@ -98,6 +98,22 @@ def test_no_contradictions_everyone_survives():
     result = METRIC.score(hyp, run, _ctx(FakeJudge()))
     assert result.score == 1.0
     assert result.evidence["consistent_claim_indices"] == [0, 1, 2]
+    # Only 3 pairs checked -- too few for a "no contradictions" note to be
+    # meaningful, so it should stay quiet rather than flag every trivial case.
+    assert result.evidence["note"] is None
+
+
+def test_no_contradictions_note_appears_at_scale():
+    """A clean sweep across many pairs is easy to misread as 'this hypothesis
+    reasons flawlessly' -- flag it as possibly just a lack of discriminating
+    power, not a positive finding, once there's enough pairs for that
+    ambiguity to matter."""
+    claims = [Claim(text=letter, role=ClaimRole.PREMISE) for letter in "ABCDE"]  # 5 claims -> 10 pairs
+    hyp, run = _run(claims)
+    result = METRIC.score(hyp, run, _ctx(FakeJudge()))
+    assert result.score == 1.0
+    assert len(result.evidence["edges_checked"]) == 10
+    assert "no contradictions found across 10 claim pairs" in result.evidence["note"]
     assert result.evidence["undecided_claim_indices"] == []
 
 

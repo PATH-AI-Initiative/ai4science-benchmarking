@@ -4,7 +4,9 @@ a flat ranked list of single-sentence hypotheses."""
 
 from __future__ import annotations
 
-from benchmarking_pipeline.io.parsers import parse_dict
+import json
+
+from benchmarking_pipeline.io.parsers import parse_dict, parse_raw_text
 
 
 def test_category_empty_string_becomes_none():
@@ -94,3 +96,16 @@ def test_missing_optional_fields_dont_break_parsing():
     assert hyp.category is None
     assert hyp.metadata == {}
     assert hyp.claims[0].entities == []
+
+
+def test_parse_raw_text_reads_top_level_field(tmp_path):
+    path = tmp_path / "capture.json"
+    path.write_text(json.dumps({"raw_text": "## Full report\n...", "hypotheses": []}))
+    assert parse_raw_text(path) == "## Full report\n..."
+
+
+def test_parse_raw_text_absent_returns_none(tmp_path):
+    """Older captures (pre-raw_text extraction) have no top-level field."""
+    path = tmp_path / "capture.json"
+    path.write_text(json.dumps({"hypotheses": []}))
+    assert parse_raw_text(path) is None

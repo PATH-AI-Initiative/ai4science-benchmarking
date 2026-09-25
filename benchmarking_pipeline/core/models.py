@@ -131,6 +131,11 @@ class EvaluationRun:
     outputs: HypothesisSet
     evaluated_on: date | None = None
     metadata: dict = field(default_factory=dict)
+    # The tool's full unparsed output, when the capture preserved it -- lets a
+    # metric (e.g. `adversarial`) see prose outside the structured hypotheses,
+    # which extraction otherwise drops entirely. `None` for older captures
+    # that predate this field, or adapters that don't populate it.
+    raw_text: str | None = None
 
 
 @dataclass

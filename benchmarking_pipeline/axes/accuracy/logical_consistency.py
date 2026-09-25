@@ -224,6 +224,19 @@ class LogicalConsistency(HypothesisMetric):
             and not entailed_by[i]
         ]
 
+        # A perfect score from zero contradictions across many pairs is easy to
+        # misread as "this hypothesis reasons flawlessly" -- true contradiction
+        # (claim A and claim B asserting incompatible things about the same
+        # point) is a narrow pattern next to "these two claims are just about
+        # different things" (the neutral default most pairs fall into), so a
+        # clean sweep at scale may equally mean the check found nothing to flag
+        # on this content, not that a stronger check necessarily would too.
+        no_contradictions_note = (
+            f"no contradictions found across {len(edges)} claim pairs -- may reflect "
+            "genuine coherence, or limited discriminating power for this content"
+            if not contradiction_pairs and len(edges) >= 10 else None
+        )
+
         return MetricResult(
             metric=self.name, axis=self.axis,
             score=round(score_value, 4),
@@ -239,6 +252,7 @@ class LogicalConsistency(HypothesisMetric):
                 "contradiction_pairs": contradiction_pairs,
                 "unresolved_conflicts": {str(k): v for k, v in unresolved_conflicts.items()},
                 "orphan_claim_indices": orphan_claims,
+                "note": no_contradictions_note,
                 "judge": ctx.judge.name,
             },
         )

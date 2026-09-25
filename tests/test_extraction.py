@@ -10,7 +10,13 @@ rather than hitting a real model."""
 
 from __future__ import annotations
 
-from benchmarking_pipeline.io.extraction import extract_hypotheses
+import json
+
+from benchmarking_pipeline.io.extraction import (
+    _kaimen_hyp_rank_order,
+    extract_hypotheses,
+    extract_kaimen_session,
+)
 
 
 class _FakeChat:
@@ -98,3 +104,112 @@ def test_max_tokens_is_forwarded_to_every_call():
     extract_hypotheses("raw", chat, max_tokens=123)
 
     assert all(c["max_tokens"] == 123 for c in chat.calls)
+
+
+def test_kaimen_rank_order_reads_first_occurrence_of_each_hyp_id():
+    overview = (
+        "## Direction 1\nHypothesis [H-hyp_bbbb] is promising.\n"
+        "## Direction 2\nHypothesis [H-hyp_aaaa] is also interesting, see also [H-hyp_bbbb].\n"
+    )
+    assert _kaimen_hyp_rank_order(overview) == {"hyp_bbbb": 1, "hyp_aaaa": 2}
+
+
+def test_kaimen_rank_order_is_decoration_agnostic():
+    """Regression test: a real overview.md cited hypotheses as plain
+    `hyp_XXXX` in backticks, with no `[H-...]` wrapper -- the old regex
+    required that exact wrapper, found zero matches, and every hypothesis in
+    that session silently fell back to the same rank."""
+    overview = (
+        "Hypothesis `hyp_c1bd9030b8e2b651` posits that...\n"
+        "Hypothesis `hyp_2173b6818fe73605` reflects...\n"
+    )
+    assert _kaimen_hyp_rank_order(overview) == {
+        "hyp_c1bd9030b8e2b651": 1, "hyp_2173b6818fe73605": 2,
+    }
+
+
+def _write_kaimen_session(session_dir):
+    (session_dir / "final").mkdir(parents=True)
+    (session_dir / "hypotheses").mkdir()
+    (session_dir / "reviews").mkdir()
+
+    (session_dir / "final" / "overview.md").write_text(
+        "## Direction 1\nHypothesis [H-hyp_bbbb] is promising.\n"
+        "## Direction 2\nHypothesis [H-hyp_aaaa] is also interesting.\n"
+    )
+    (session_dir / "hypotheses" / "hyp_aaaa.json").write_text(json.dumps({
+        "strategy": "literature",
+        "record": {
+            "title": "Title A", "statement": "Statement A", "mechanism": "Mechanism A text",
+            "entities": ["GeneX"], "anticipated_outcomes": "", "novelty_argument": "",
+            "citations": [{"url": "http://a", "title": "Paper A", "excerpt": "..."}],
+        },
+    }))
+    (session_dir / "hypotheses" / "hyp_bbbb.json").write_text(json.dumps({
+        "strategy": "literature",
+        "record": {
+            "title": "Title B", "statement": "Statement B", "mechanism": "Mechanism B text",
+            "entities": [], "anticipated_outcomes": "", "novelty_argument": "", "citations": [],
+        },
+    }))
+    (session_dir / "reviews" / "rev_1.json").write_text(json.dumps({
+        "hypothesis_id": "hyp_aaaa",
+        "record": {
+            "novelty": 0.8, "feasibility": 0.6, "notes": "solid",
+            "assumptions": [
+                {"assumption": "risky one", "plausibility": "uncertain", "rationale": "..."},
+                {"assumption": "safe one", "plausibility": "plausible", "rationale": "..."},
+            ],
+        },
+    }))
+    # hyp_bbbb intentionally has no review file -- should still parse fine.
+
+
+def test_extract_kaimen_session_maps_fields_and_decomposes_mechanism(tmp_path):
+    session = tmp_path / "base"
+    _write_kaimen_session(session)
+    chat = _FakeChat(None, {
+        "Statement A": _claims_response("decomposed claim A"),
+        "Statement B": _claims_response("decomposed claim B"),
+    })
+
+    result = extract_kaimen_session(session, chat)
+
+    assert result["raw_text"].startswith("## Direction 1")
+    hyps = {h["id"]: h for h in result["hypotheses"]}
+    assert hyps["hyp_bbbb"]["rank"] == 1
+    assert hyps["hyp_aaaa"]["rank"] == 2
+    assert hyps["hyp_aaaa"]["text"] == "Title A: Statement A"
+
+    # The synthetic statement-level claim carries citations + entities...
+    a_claims = hyps["hyp_aaaa"]["claims"]
+    assert a_claims[0]["text"] == "Statement A"
+    assert a_claims[0]["references"][0]["raw"] == "http://a"
+    assert a_claims[0]["entities"][0]["name"] == "GeneX"
+    # ...and the LLM-decomposed mechanism claim(s) follow it.
+    assert a_claims[1]["text"] == "decomposed claim A"
+
+    sr = hyps["hyp_aaaa"]["self_reported"]
+    assert sr["novelty_tier"] == "0.8"
+    assert sr["feasibility_tier"] == "0.6"
+    assert sr["key_risks"] == ["risky one"]
+
+    # No review file for hyp_bbbb -- self_reported stays blank, not an error.
+    assert hyps["hyp_bbbb"]["self_reported"]["novelty_tier"] == ""
+
+
+def test_extract_kaimen_session_skips_claims_decomposition_when_no_argument_text(tmp_path):
+    """A hypothesis with no mechanism/anticipated_outcomes/novelty_argument
+    text shouldn't trigger a claims call at all -- nothing to decompose."""
+    session = tmp_path / "base"
+    _write_kaimen_session(session)
+    data = json.loads((session / "hypotheses" / "hyp_bbbb.json").read_text())
+    data["record"]["mechanism"] = ""
+    (session / "hypotheses" / "hyp_bbbb.json").write_text(json.dumps(data))
+    chat = _FakeChat(None, {"Statement A": _claims_response("decomposed claim A")})
+
+    result = extract_kaimen_session(session, chat)
+
+    hyps = {h["id"]: h for h in result["hypotheses"]}
+    assert len(hyps["hyp_bbbb"]["claims"]) == 1  # just the synthetic statement claim
+    assert len(chat.calls) == 1  # only hyp_aaaa triggered a claims call
