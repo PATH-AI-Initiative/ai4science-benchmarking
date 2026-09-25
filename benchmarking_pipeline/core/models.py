@@ -1,11 +1,11 @@
 """Core data model.
 
 A tool run produces an ordered :class:`HypothesisSet`. Order is load-bearing:
-the framework scores a tool's *best* hypotheses and checks whether they are
-ranked at the top of the list, so ``rank`` is preserved end to end.
+the framework scores a tool's best hypotheses and checks whether they rank at
+the top, so ``rank`` is preserved end to end.
 
-Each :class:`Hypothesis` decomposes into :class:`Claim` objects, which in turn
-carry the :class:`Reference` and :class:`Entity` objects that the Accuracy axis
+Each :class:`Hypothesis` decomposes into :class:`Claim` objects, which carry
+the :class:`Reference` and :class:`Entity` objects the Accuracy axis
 validates against external sources.
 """
 

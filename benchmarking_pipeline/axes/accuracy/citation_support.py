@@ -3,23 +3,21 @@ specific claim it's attached to?
 
 A sibling of ``citation_accuracy``, not a layer within it: a citation can be
 perfectly real and correctly identified while still saying something
-unrelated or contradictory to the claim it's cited against, and that's a
-genuinely different failure from the source not existing at all. Only checked
-for citations that already passed ``citation_accuracy``'s existence/title-match
-gate (via the shared :func:`~._citation_resolution.resolve_citation`, so this
-metric doesn't re-hit the literature API or the title-match judge call) and
-that have an abstract available -- not every literature-client result does.
+unrelated or contradictory to the claim it's cited against -- a different
+failure from the source not existing. Only checked for citations that already
+passed ``citation_accuracy``'s existence/title-match gate (via the shared
+:func:`~._citation_resolution.resolve_citation`, so no repeated API/judge
+calls) and that have an abstract available.
 
 For each checkable citation, a judge compares the source's abstract against
-the exact claim text and classifies the relationship as
+the claim text and classifies the relationship as
 ``supports``/``contradicts``/``neutral`` (defaulting to ``neutral`` when
 ambiguous), via the same
 :func:`~benchmarking_pipeline.services.relationship_judge.judge_relationship`
-utility ``logical_consistency`` uses for claim-pair checks. ``score`` is the
-proportion of checked citations classified ``supports`` -- ``contradicts``
-and ``neutral`` both count against it.
+utility ``logical_consistency`` uses. ``score`` is the proportion classified
+``supports`` -- ``contradicts`` and ``neutral`` both count against it.
 
-Degrades gracefully: no literature client / no judge / no citations that are
+Degrades gracefully: no literature client, no judge, or no citations that are
 both existing and abstract-bearing -> ``score`` is ``None``.
 """
 

@@ -1,47 +1,34 @@
 """Entity accuracy: are named biological entities real?
 
 Resolves each entity a claim mentions against ``ctx.biodb`` (UniProt, KEGG,
-...) and scores the fraction that resolve to a real record. This is the
-existence layer only — checking that entities are used *consistently and
-correctly related* to each other beyond the single-entity identity check
-below is a further layer this doesn't attempt yet, the same "existence first,
-relational correctness later" split ``citation_accuracy`` already draws
-between existence and support.
+...) and scores the fraction that resolve to a real record. Existence only --
+checking that entities relate to each other correctly is a further layer not
+attempted here, the same existence/support split ``citation_accuracy`` draws.
 
 Entities tagged with a kind that clearly isn't a gene/protein record --
 ``species``, a cell line, a drug/compound, a pathway -- are skipped rather
-than looked up: resolving "Plasmodium knowlesi" or "DSM265" against UniProt
-would be a category error, not a meaningful accuracy check. Everything else
-(``gene``, ``protein``, unlabeled ``""``, and any other specific kind an
-extraction produces, e.g. ``enzyme``, ``receptor``, ``transporter``) is
-attempted. This is a blocklist rather than an allowlist deliberately: ``kind``
-is free text an LLM extraction fills in, not a fixed enum, so a tool will
-routinely use synonyms the extraction prompt's three examples never
-mentioned -- an allowlist of just "gene"/"protein" would keep silently
-missing real proteins tagged "enzyme" or "kinase". Skipped entities are
-reported, not silently dropped.
+than looked up (resolving "Plasmodium knowlesi" against UniProt is a category
+error). Everything else is attempted, including unlabeled and free-text kinds
+like ``enzyme`` or ``receptor``: this is a blocklist, not an allowlist,
+because ``kind`` is free text an LLM extraction fills in, and an allowlist of
+just "gene"/"protein" would silently miss real proteins tagged otherwise.
+Skipped entities are reported, not dropped.
 
-Two failure modes found by running this against a real capture and the live
-UniProt API, both handled here:
+Two failure modes, both handled:
 
 1. **Wrong-species ortholog.** A bare name like "DHODH" isn't
-   species-specific -- UniProt indexes the same gene's ortholog across every
-   organism it covers as a separate record, so an unqualified query can
-   resolve to *some* organism's version, not necessarily the one the claim is
-   actually about. When a claim also mentions a species/organism entity, that
-   name is passed to ``ctx.biodb.resolve`` as an organism hint (the biodb
-   client falls back to the unqualified query if the hint finds nothing --
-   see ``biodb.py``).
-2. **Coincidental free-text match.** Searching "dihydrofolate reductase"
-   against the live API really did return an unrelated enzyme that merely
-   shared some descriptive wording -- the same class of false positive
-   ``citation_accuracy`` and ``size_of_leap`` guard against for their own
-   fuzzy matches. When a judge is available, a resolved record is checked
-   for genuine identity (not just text overlap) before counting as existing.
+   species-specific -- UniProt indexes each organism's ortholog as a separate
+   record. When a claim also names a species/organism, that name is passed to
+   ``ctx.biodb.resolve`` as an organism hint (falls back to the unqualified
+   query if the hint finds nothing -- see ``biodb.py``).
+2. **Coincidental free-text match.** A search can return an unrelated record
+   that merely shares descriptive wording -- the same false-positive class
+   ``citation_accuracy`` and ``size_of_leap`` guard against. When a judge is
+   available, a resolved record is checked for genuine identity before it
+   counts as existing.
 
-Degrades gracefully: no entities on any claim -> ``score`` is ``None``; no
-biodb client configured -> ``score`` is ``None``; no judge -> the identity
-check is skipped and a resolved record is trusted at face value.
+Degrades gracefully: no entities, or no biodb client -> ``score`` is
+``None``. No judge -> identity check is skipped, record trusted at face value.
 """
 
 from __future__ import annotations

@@ -1,50 +1,30 @@
-"""Size of scientific leap: how far is each hypothesis from a fixed set of
-reference anchor papers?
+"""Size of scientific leap: distance from each hypothesis to a fixed set of
+reference anchor papers.
 
-Anchors are resolved once per evaluation -- a literature search on the run's
-own research prompt, not on each hypothesis individually -- and cached on the
-Context (``ctx.anchor_cache``) so every hypothesis, and every run in a bundle
-(base/repeats/perturbations share the same prompt), is read against the
-identical reference set instead of each triggering its own search. This is
-what makes the score interpretable as "how far from a fixed, reportable frame
-of reference" rather than "how far from whatever ephemeral search a
-hypothesis's own wording happened to turn up" -- and matters for comparing
-tools too: two tools scored under the same prompt are judged against the same
-anchors, not each against a different one nobody can see.
+Anchors are resolved once per evaluation, via a literature search on the run's
+prompt (not per hypothesis), and cached on ``ctx.anchor_cache``. Every
+hypothesis, and every run in a bundle, is scored against the same anchor set.
 
-Anchors here are auto-selected via literature search rather than curated by a
-domain expert. That's a real limitation, not a stylistic choice: the
-composition of the anchor set shapes what counts as "novel" (a set skewed
-toward one sub-field reads anything outside it as more distant), so it is
-reported in full in ``evidence["anchors"]`` rather than left implicit.
+Anchors are auto-selected via literature search, not curated by a domain
+expert. That's a real limitation: anchor-set composition shapes what counts
+as "novel", so the anchors are reported in full in ``evidence["anchors"]``.
 
-Score is the distance to a hypothesis's nearest anchor, not the four-way
+Score is distance to the nearest anchor -- not the four-way
 restatement/recombination/extension/novel classification the framework
-ultimately wants -- that needs a curated, calibrated anchor set (i.e. anchors
-placed at known points along a novelty spectrum), which is expert judgement
-this auto-selected set doesn't provide.
+ultimately wants, which needs a curated, calibrated anchor set. Distance is
+not a validity signal: a hypothesis far from every anchor must still be read
+against the Accuracy axis, since "distant" and "wrong" look the same here.
 
-A hypothesis distant from every anchor is not automatically novel *in a good
-way* -- it must be read alongside the Accuracy axis: distant *and*
-well-grounded is a genuine originality signal; distant *without* grounding
-may simply be wrong. This metric only measures distance, not validity.
+Anchor search is bibliographic (keyword/relevance-based), not semantic, so a
+returned anchor can share vocabulary with the prompt while being off-topic --
+the same failure mode ``citation_accuracy`` guards against. When a judge is
+available, each anchor is checked for genuine topical relevance before it can
+serve as a hypothesis's nearest match.
 
-The literature search behind anchor selection is bibliographic
-(keyword/relevance-based), not semantic, so a returned "anchor" can share
-generic methodological vocabulary with the research prompt while being from
-an unrelated field -- the same failure mode ``citation_accuracy`` guards
-against for its existence check. When a judge is available, each anchor is
-checked against a hypothesis for genuine topical relevance (not just
-vocabulary overlap) before it's allowed to serve as that hypothesis's nearest
-match; an anchor set with no topically relevant match for a given hypothesis
-leaves that hypothesis unassessed rather than silently scored against a wrong
-one.
-
-Degrades gracefully: no embeddings or no literature client -> score is None.
-No anchors found for the run's prompt -> score is None. No judge -> the
-topical-relevance check is skipped (the best embedding match is trusted at
-face value). A hypothesis with no topically relevant anchor is excluded from
-the mean and reported separately, not silently dropped.
+Degrades gracefully: no embeddings, no literature client, or no anchors found
+for the prompt -> score is None. No judge -> topical-relevance check is
+skipped. A hypothesis with no topically relevant anchor is excluded from the
+mean and reported separately.
 """
 
 from __future__ import annotations
@@ -101,13 +81,11 @@ _ANCHOR_LIMIT = 5
 
 def _resolve_anchors(query: str, ctx: Context) -> list[tuple[PaperRecord, np.ndarray]] | str:
     """The fixed anchor set for this evaluation: up to ``_ANCHOR_LIMIT`` papers
-    found by searching the literature for ``query`` once, embedded once, and
-    cached on ``ctx`` -- so a bundle's base/repeat/perturbation runs (which
-    share the same prompt) and every hypothesis within each compare against
-    the identical set rather than each re-searching.
+    found by searching the literature for ``query``, embedded once, and cached
+    on ``ctx`` so every run and hypothesis compares against the same set.
 
-    Returns a list of ``(record, embedding_vector)`` pairs, or a string
-    failure reason ("no_literature_found") on a cache miss with no hits.
+    Returns a list of ``(record, embedding_vector)`` pairs, or the string
+    ``"no_literature_found"`` on a cache miss with no hits.
     """
     cached = ctx.anchor_cache.get(query)
     if cached is not None:

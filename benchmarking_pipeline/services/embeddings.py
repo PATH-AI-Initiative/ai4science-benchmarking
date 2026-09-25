@@ -1,14 +1,14 @@
 """Embeddings and cosine similarity — the primitive shared across axes.
 
 ``EmbeddingModel`` is a protocol so the concrete backend (a hosted embedding
-API, a local sentence-transformer, etc.) can be chosen per run without touching
-metric code. For the benchmark to be defensible the chosen backend should be
-pinned/versioned and recorded in the run metadata.
+API, a local sentence-transformer, etc.) can be chosen per run without
+touching metric code. Pin and version the chosen backend, and record it in
+run metadata.
 
 ``HashingEmbedding`` is a dependency-free, deterministic placeholder so the
-pipeline runs out of the box and tests are reproducible. It is a bag-of-tokens
-hash, NOT a semantic model — replace it with a real backend before drawing any
-scientific conclusions.
+pipeline runs out of the box and tests are reproducible. It's a bag-of-tokens
+hash, not a semantic model -- replace it before drawing scientific
+conclusions.
 """
 
 from __future__ import annotations

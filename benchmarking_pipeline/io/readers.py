@@ -1,7 +1,7 @@
 """Extract plain text from exported tool reports (docx, PDF, markdown, plain text).
 
-This is step one of capturing a tool's output: get the raw text out of
-whatever document format the tool exported, before structured extraction
+Step one of capturing a tool's output: pull raw text out of whatever document
+format the tool exported, before structured extraction
 (:mod:`benchmarking_pipeline.io.extraction`) turns it into a
 :class:`~benchmarking_pipeline.core.models.HypothesisSet`.
 """

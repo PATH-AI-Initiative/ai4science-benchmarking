@@ -1,19 +1,19 @@
 """Scoring and aggregation.
 
-This module turns per-metric results into a tool-level composite, encoding the
-rubric rules that would otherwise be scattered across the axes:
+Turns per-metric results into a tool-level composite, encoding the rubric
+rules that would otherwise be scattered across the axes:
 
-* **Accuracy floor** — a hypothesis whose accuracy falls below
-  ``config.accuracy_floor`` contributes no further (Quality) scores.
+* **Accuracy floor** — a hypothesis below ``config.accuracy_floor`` contributes
+  no further (Quality) scores.
 * **Safety gate** — a tool that fails any gate metric is disqualified outright.
 * **Best-hypothesis focus** — the tool-level score is built from the top-k
-  ranked hypotheses, not the average, because a resource-limited team may only
+  ranked hypotheses, not the average, since a resource-limited team may only
   follow up one lead.
-* **Set-level metrics** (e.g. diversity, reproducibility) are added on top of
+* **Set-level metrics** (diversity, reproducibility, ...) are added on top of
   the aggregated hypothesis-level score.
 
-Novelty is computed but never folded into the composite; it is reported as a
-separate profile by the ``report`` layer.
+Novelty is computed but never folded into the composite; the ``report`` layer
+reports it as a separate profile.
 """
 
 from __future__ import annotations

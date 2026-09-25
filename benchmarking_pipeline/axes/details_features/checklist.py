@@ -1,9 +1,9 @@
 """The Tier 1 structured audit checklist.
 
-Implemented as a set-level metric with ``score=None``: it contributes no number
-to the composite but travels through the same pipeline and report as everything
-else, so a tool's descriptive profile is captured in one place. The fields
-mirror the framework's Details & Features sub-sections.
+Implemented as a set-level metric with ``score=None``: contributes no number
+to the composite, but travels through the same pipeline and report as
+everything else, so a tool's descriptive profile is captured in one place.
+Fields mirror the framework's Details & Features sub-sections.
 """
 
 from __future__ import annotations

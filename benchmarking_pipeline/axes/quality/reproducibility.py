@@ -2,38 +2,31 @@
 
 Runs the identical prompt N times and measures the mean and variance of
 pairwise cosine similarity between the runs' comparison vectors. High mean
-similarity with low variance = reliable; low mean or high variance separates
-instability from productive stochasticity (genuine exploration).
+with low variance = reliable; low mean or high variance separates instability
+from productive stochasticity (genuine exploration).
 
 What gets compared per run is ``config.multi_run_comparison`` (see
-``RunConfig``): the whole hypothesis set mean-pooled into one vector, or just
-the rank-1 hypothesis. Not yet settled which is the better default — both are
-available.
+``RunConfig``): the whole hypothesis set mean-pooled, or just the rank-1
+hypothesis. Default is unsettled -- both are available.
 
-In ``top_hypothesis`` mode specifically, embedding similarity turns out not to
-discriminate much at all: measured directly, two totally unrelated research
-questions embed around 0.83 cosine similarity, while two runs proposing
-*completely different drug classes* for the identical question still embed
-0.91-0.96 -- specter2's scale is compressed enough that "same narrow research
-question" alone accounts for nearly all of that, regardless of which specific
-intervention each run actually proposes. A fixed threshold like "0.85 =
-highly reproducible" is barely more discriminating than chance here.
+In ``top_hypothesis`` mode, embedding similarity barely discriminates:
+measured directly, two unrelated research questions embed ~0.83 cosine
+similarity, while two runs proposing completely different drug classes for
+the identical question still embed 0.91-0.96 -- a fixed threshold like
+"0.85 = highly reproducible" is close to chance here.
 
-So in ``top_hypothesis`` mode, when a judge is available, the *scored* signal
-is ``mechanism_match_rate`` -- not the embedding similarity. It isn't a plain
-match-rate on rank-1-vs-rank-1 either: a run's top idea reappearing at rank 2
-in another run is a different (better) outcome than it vanishing outright,
-and a strict rank-1-only comparison can't tell those apart. Each pair of runs
-is checked via :func:`_shared.mechanism_match_credit` -- does run A's rank-1
-idea survive anywhere in run B's top-``config.top_k_hypotheses``, and
-vice versa, credited by how far down it dropped (rank 1 = full credit, rank 2
-= half, ...). Embedding similarity is still computed and reported in full
-(``mean_pairwise_similarity``, ``variance``) since it's informative context,
-just not treated as if it discriminates reproducibility on its own. Falls
-back to the embedding-based score when there's no judge, or in ``whole_set``
-mode (there's no single top-hypothesis pair to check mechanism agreement on).
+So in ``top_hypothesis`` mode, when a judge is available, the scored signal
+is ``mechanism_match_rate``, not embedding similarity -- and not a plain
+rank-1-vs-rank-1 match, since a top idea reappearing at rank 2 is a different
+outcome than vanishing. Each pair of runs is checked via
+:func:`_shared.mechanism_match_credit`: does run A's rank-1 idea survive
+anywhere in run B's top-k (and vice versa), credited by how far it dropped
+(rank 1 = full credit, rank 2 = half, ...). Embedding similarity is still
+computed and reported (``mean_pairwise_similarity``, ``variance``) as
+context, just not trusted as the discriminating signal. Falls back to it
+when there's no judge, or in ``whole_set`` mode.
 
-Implemented as a :class:`MultiRunMetric`: it reads ``bundle.base`` + ``bundle.repeats``.
+Implemented as a :class:`MultiRunMetric`: reads ``bundle.base`` + ``bundle.repeats``.
 """
 
 from __future__ import annotations

@@ -1,42 +1,39 @@
 """Logical consistency: do conclusions follow from premises without contradiction?
 
-Four stages, following Dung's abstract argumentation framework (Dung, 1995,
-"On the acceptability of arguments...") for the scoring semantics rather than
-an ad hoc heuristic:
+Four stages, using Dung's abstract argumentation framework (Dung, 1995, "On
+the acceptability of arguments...") for the scoring semantics rather than an
+ad hoc heuristic:
 
 1. **Role assignment.** Each claim is tagged premise / mechanistic_step /
    prediction / background_assumption (lazily, via the judge, if not already
    set during extraction). Role determines which pairs matter most and how
    severe a contradiction involving it is.
 2. **Edge construction.** For each candidate pair, the judge classifies the
-   relationship as one of ``a_entails_b`` / ``b_entails_a`` / ``contradicts`` /
+   relationship as ``a_entails_b`` / ``b_entails_a`` / ``contradicts`` /
    ``neutral``, via the shared
    :func:`~benchmarking_pipeline.services.relationship_judge.judge_relationship`
-   utility (also used by citation support-checking — same "how does text A
-   relate to text B" operation, different choice set). Pairs are checked in
-   priority order — core-argument combinations (premise/mechanism/prediction)
-   before background-vs-background — and ``config.logical_consistency_max_pairs``
-   caps the budget if set, dropping lowest-priority pairs first (reported,
-   never silently skipped).
+   utility (also used by citation support-checking). Pairs are checked in
+   priority order -- core-argument combinations before background-vs-
+   background -- and ``config.logical_consistency_max_pairs`` caps the budget
+   if set, dropping lowest-priority pairs first (reported, never silently
+   skipped).
 3. **Graph assembly and scoring.** ``contradicts`` verdicts become a symmetric
-   attack relation; the score is ``|grounded extension| / |claims|`` — the
-   standard fixed-point computation, not a bespoke "count the contradictions"
-   rule. A claim survives only if every attacker is itself defeated; a plain
-   mutual contradiction with no other structure defeats *both* claims (neither
-   can be prioritised over the other), and contradiction cycles resolve the
-   same way for free, with no separate cycle-detection heuristic needed.
-   ``entails`` verdicts are used only for orphan detection (a mechanistic step
-   or prediction with no supporting claim) — support edges do not defend
-   against attacks here, keeping the score a single, standard formalism rather
-   than a bipolar argumentation framework with its less settled semantics.
-4. **Diagnostics.** Severity (derived from the roles involved) and orphan
-   status are reported per contradiction/claim for human review, but neither
-   changes the numeric score — the score is pure contradiction-freeness, per
-   the framework's own definition (Figure 2: "the proportion of claims forming
-   a contradiction-free subgraph").
+   attack relation; the score is ``|grounded extension| / |claims|`` -- the
+   standard fixed-point computation, not a bespoke contradiction count. A
+   claim survives only if every attacker is itself defeated, so a plain
+   mutual contradiction defeats both claims, and contradiction cycles resolve
+   the same way for free. ``entails`` verdicts are used only for orphan
+   detection (a mechanistic step or prediction with no supporting claim) --
+   support edges don't defend against attacks, keeping this a single standard
+   formalism rather than a bipolar argumentation framework.
+4. **Diagnostics.** Severity and orphan status are reported per
+   contradiction/claim for human review but don't affect the score -- the
+   score is pure contradiction-freeness, per the framework's own definition
+   (Figure 2: "the proportion of claims forming a contradiction-free
+   subgraph").
 
-Degrades gracefully to ``score=None`` with no judge attached, or trivially to
-a perfect score with fewer than two claims to compare.
+Degrades to ``score=None`` with no judge attached, or trivially to a perfect
+score with fewer than two claims to compare.
 """
 
 from __future__ import annotations

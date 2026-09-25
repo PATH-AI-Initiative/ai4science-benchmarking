@@ -1,26 +1,22 @@
 """Cross-tool comparison: merge multiple ``to_dict()``-shaped results (see
 ``report.results``) into one metric x tool view.
 
-Reads already-serialized results rather than in-memory ``ToolScore`` objects,
-since that's how results actually accumulate in practice — each tool is
-evaluated via its own ``benchmarking run`` invocation, often in a separate
-session, and written to its own JSON file.
+Reads already-serialized results, not in-memory ``ToolScore`` objects -- each
+tool is evaluated via its own ``benchmarking run`` invocation, often in a
+separate session, and written to its own JSON file.
 
-Hypothesis-level metrics (citation_accuracy, entity_accuracy, ...) don't carry
-a single tool-level number the way set/multi-run metrics (diversity,
-robustness, adversarial, ...) do — their official aggregate is the
-rank/weight-driven composite ``core.scoring`` already computes into
-``axis_scores``. For a side-by-side metric table, this reports a plain,
-unweighted mean across a tool's hypotheses instead: transparent and easy to
-sanity-check, but a different (and looser) number than the axis-level
-composite already present in each tool's own results — never treat the two
-as interchangeable.
+Hypothesis-level metrics (citation_accuracy, entity_accuracy, ...) don't
+carry a single tool-level number the way set/multi-run metrics (diversity,
+robustness, adversarial, ...) do; their official aggregate is the composite
+``core.scoring`` already computes into ``axis_scores``. For a side-by-side
+table, this reports a plain unweighted mean across a tool's hypotheses
+instead -- transparent, but a looser number than the axis-level composite.
+Never treat the two as interchangeable.
 
-A composite/axis score is only comparable across tools if it was produced
-under the same ``RunConfig`` (weights, thresholds, ``top_k_hypotheses``, ...)
--- ``compare()`` checks the ``config`` each input result carries (see
-``report.results``) and flags a mismatch rather than silently reporting
-composites side by side as if they meant the same thing.
+A composite/axis score is only comparable across tools if produced under the
+same ``RunConfig`` (weights, thresholds, ``top_k_hypotheses``, ...) --
+``compare()`` checks each input's ``config`` and flags a mismatch rather than
+silently comparing composites as if they meant the same thing.
 """
 
 from __future__ import annotations

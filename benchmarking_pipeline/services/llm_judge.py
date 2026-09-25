@@ -1,15 +1,15 @@
 """LLM-as-judge.
 
-Used by metrics that require model judgement at scale — logical consistency
-(does each conclusion follow from its premises?), citation-support
-classification, and assists to the SME-led tractability review.
+Used by metrics that require model judgement at scale: logical consistency,
+citation-support classification, and assists to the SME-led tractability
+review.
 
-``LLMJudge`` is a protocol so the backend is swappable and, for a defensible
-benchmark, pinnable. Each concrete judge below is a thin wrapper around a
-:class:`~benchmarking_pipeline.services.structured_chat.StructuredChatClient` —
-the schema-constrained "ask a model to fill in this JSON" primitive shared with
-structured extraction. Pin the model and record it in run metadata so judge
-output is traceable.
+``LLMJudge`` is a protocol so the backend is swappable and pinnable. Each
+concrete judge below wraps a
+:class:`~benchmarking_pipeline.services.structured_chat.StructuredChatClient`,
+the schema-constrained "ask a model to fill in this JSON" primitive shared
+with structured extraction. Pin the model and record it in run metadata so
+judge output is traceable.
 """
 
 from __future__ import annotations

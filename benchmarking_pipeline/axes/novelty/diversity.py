@@ -1,9 +1,8 @@
 """Diversity of ideas: how spread are the hypotheses across conceptual space?
 
-Fully implemented against the embedding service: computes the average pairwise
-cosine *distance* between output embeddings (primary), with convex-hull volume
-as a supplementary coverage measure. A set clustered around similar territory is
-effectively one hypothesis repeated; a spread, non-redundant set is worth more.
+Computes average pairwise cosine distance between output embeddings. A
+cluster of similar hypotheses is effectively one idea repeated; a spread,
+non-redundant set is worth more.
 
 Reported as a novelty-profile figure, not a composite contributor.
 """

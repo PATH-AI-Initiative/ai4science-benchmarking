@@ -4,8 +4,7 @@ Tools return hypotheses in varied formats (free text, structured summaries,
 ranked lists). Each format gets a parser here; all produce the same
 :class:`HypothesisSet` so downstream metrics are format-agnostic.
 
-A minimal JSON parser is provided to make the pipeline runnable. The expected
-shape is::
+A minimal JSON parser makes the pipeline runnable. Expected shape::
 
     {
       "raw_text": "...",
@@ -18,13 +17,12 @@ shape is::
       ]
     }
 
-``role`` is optional (one of ``ClaimRole``'s values) — the logical-consistency
-metric classifies it lazily via the judge when absent. ``category``,
-``entities``, and ``self_reported`` are all optional too — most captures won't
-have them; ``self_reported`` (a tool's own novelty/feasibility self-assessment,
-if it makes one) lands in ``Hypothesis.metadata``, not in ``claims``, since
-it's the tool's own judgment rather than a scientific claim to be checked.
-Top-level ``raw_text`` is also optional -- see :func:`parse_raw_text`.
+``role`` is optional -- logical-consistency classifies it lazily via the
+judge when absent. ``category``, ``entities``, and ``self_reported`` are
+optional too; ``self_reported`` (a tool's own novelty/feasibility
+self-assessment) lands in ``Hypothesis.metadata``, not ``claims``, since it's
+the tool's own judgment rather than a checkable claim. Top-level ``raw_text``
+is also optional -- see :func:`parse_raw_text`.
 """
 
 from __future__ import annotations

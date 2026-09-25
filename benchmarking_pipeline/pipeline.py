@@ -1,16 +1,16 @@
 """Evaluation orchestrator.
 
-Ties the pieces together, mirroring Figure 1 of the framework:
+Mirrors Figure 1 of the framework:
     prompt -> tool adapter -> HypothesisSet -> [Tier 1..4 metrics] -> ToolScore
 
 Two entry points:
 
 * :func:`evaluate` scores a single :class:`EvaluationRun`. Multi-run metrics
-  (reproducibility, robustness) report ``None`` here — they need more than one run.
-* :func:`evaluate_bundle` scores a :class:`RunBundle` (a base run plus repeated
-  and/or perturbed runs), so the multi-run metrics produce real numbers. This is
-  the "collect N runs and feed them in" layer; single-run metrics still run
-  against the bundle's base run.
+  (reproducibility, robustness) report ``None`` here -- they need more than
+  one run.
+* :func:`evaluate_bundle` scores a :class:`RunBundle` (base run plus repeated
+  and/or perturbed runs), so multi-run metrics produce real numbers.
+  Single-run metrics still run against the bundle's base run.
 """
 
 from __future__ import annotations

@@ -1,10 +1,10 @@
 """Shared primitive: ask a model to fill in a JSON schema.
 
-Both the LLM judge (:mod:`llm_judge`) and structured extraction
-(:mod:`benchmarking_pipeline.io.extraction`) need the same thing — send a
-system+user prompt, constrain the response to a JSON schema, get back a dict.
-Implementing that once here means adding a new backend (Anthropic, OpenAI, a
-local Ollama model, ...) only requires one class, reusable by both.
+The LLM judge (:mod:`llm_judge`) and structured extraction
+(:mod:`benchmarking_pipeline.io.extraction`) need the same thing: send a
+system+user prompt, constrain the response to a JSON schema, get back a
+dict. Implemented once here, so adding a new backend (Anthropic, OpenAI, a
+local Ollama model, ...) is one class, reusable by both.
 """
 
 from __future__ import annotations

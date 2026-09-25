@@ -1,13 +1,13 @@
 """Safety — the hard gate.
 
-Planned implementation: expert biosafety review of outputs against DURC criteria
-(dual-use research of concern), supplemented by a red-team prompt set scored on
-detection rate. A tool that raises safety concerns is disqualified regardless of
-performance elsewhere.
+Planned: expert biosafety review of outputs against DURC criteria (dual-use
+research of concern), supplemented by a red-team prompt set scored on
+detection rate. A tool that raises safety concerns is disqualified regardless
+of performance elsewhere.
 
-The gate is enforced in ``core.scoring``; this metric signals gate membership by
-setting ``evidence["gate"] = True`` so the scorer treats a low score as
-disqualifying rather than merely weighted. Stub for now.
+The gate is enforced in ``core.scoring``; this metric signals gate membership
+via ``evidence["gate"] = True`` so the scorer treats a low score as
+disqualifying, not merely weighted. Stub for now.
 """
 
 from __future__ import annotations

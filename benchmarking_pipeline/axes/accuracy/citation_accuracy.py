@@ -3,31 +3,26 @@
 Two layered checks:
 
 1. **Existence** (always computed, given a literature client): does a paper
-   matching this reference actually exist? This is the metric's ``score`` —
-   its meaning never changes regardless of what else is attached, so scores
-   stay comparable across runs with different optional services wired up.
-2. **Title match** (folded into existence, only when a judge is available and
-   the record came from a fuzzy bibliographic search rather than an exact DOI
-   lookup): bibliographic search relevance (e.g. CrossRef's own ranking score)
-   is a text-overlap heuristic, not a topical one -- a press-release-style
-   title like "Phase 3 trial ... meets primary endpoint" can out-score-match
-   an unrelated drug's unrelated trial announcement purely on shared generic
-   phrasing. An exact DOI resolution needs no such check (it's already
-   authoritative); a fuzzy search hit does, via
+   matching this reference exist? This is the metric's ``score`` -- its
+   meaning doesn't change with what else is attached, so scores stay
+   comparable across runs with different optional services wired up.
+2. **Title match** (only when a judge is available, and only for a fuzzy
+   bibliographic-search hit rather than an exact DOI lookup): search
+   relevance ranking is a text-overlap heuristic, not a topical one -- a
+   press-release-style title can out-score-match an unrelated trial
+   announcement on shared generic phrasing. Checked via
    :func:`~benchmarking_pipeline.services.relationship_judge.judge_relationship`.
+   An exact DOI resolution is already authoritative and skips this.
 
-Whether an existing citation actually *supports* the claim it's attached to
-is a separate, sibling metric -- see ``citation_support``. A citation can be
-perfectly real and still misused, so conflating "exists" with "supports" into
-one number would make this score's meaning depend on which optional services
-happen to be attached for a given run. Both metrics share the same
-existence/title-match resolution step (see ``_citation_resolution``) so
-adding citation_support doesn't double the literature-API and judge calls
-this metric already makes.
+Whether an existing citation actually *supports* its claim is a separate
+sibling metric -- see ``citation_support``. Conflating "exists" with
+"supports" into one number would make this score's meaning depend on which
+optional services happen to be attached. Both metrics share the same
+existence/title-match resolution step (see ``_citation_resolution``), so
+adding citation_support doesn't double the literature-API and judge calls.
 
-Degrades gracefully: no literature client -> ``score`` is ``None``; no judge
--> the title-match check is skipped (a fuzzy search hit is trusted at face
-value, the old behavior).
+Degrades gracefully: no literature client -> ``score`` is ``None``. No judge
+-> title-match check is skipped, fuzzy hits trusted at face value.
 """
 
 from __future__ import annotations

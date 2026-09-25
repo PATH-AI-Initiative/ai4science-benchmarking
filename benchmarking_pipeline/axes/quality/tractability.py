@@ -1,11 +1,11 @@
 """Downstream tractability.
 
-Planned implementation: a structured SME review protocol scoring each hypothesis
-on specificity, feasibility, and falsifiability — assessed through an LMIC lens
-(does it require equipment available only in well-resourced labs?) and including
-an ethics check (human subjects, animal welfare, biosafety). Rubric anchors are
-agreed before scoring. ``ctx.judge`` may assist, but this metric is
-human-in-the-loop by design. Stub for now.
+Planned: a structured SME review scoring each hypothesis on specificity,
+feasibility, and falsifiability -- through an LMIC lens (does it need
+equipment only well-resourced labs have?) and an ethics check (human
+subjects, animal welfare, biosafety). Rubric anchors are agreed before
+scoring. ``ctx.judge`` may assist, but this metric is human-in-the-loop by
+design. Stub for now.
 """
 
 from __future__ import annotations

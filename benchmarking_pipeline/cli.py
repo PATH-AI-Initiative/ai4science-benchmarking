@@ -1,8 +1,7 @@
 """Command-line entry point.
 
 Extract a captured JSON from an exported tool report (docx/PDF) — writes a
-draft you should review before scoring. Works fully offline with a local
-Ollama model:
+draft to review before scoring. Fully offline with a local Ollama model:
     benchmarking extract --input tool_report.pdf --out captured.json \\
         --backend ollama --model llama3.1
 
@@ -17,10 +16,9 @@ captures of the same prompt):
         --repeat repeat1.json --repeat repeat2.json \\
         --perturb reword=reword1.json \\
         --embeddings specter2 --out results.json
-    # --perturb also accepts kb_removal=... (a capture from a knowledge-base-
-    # removed run), reported by robustness for interpretation but never
-    # scored -- omitted from the example above since no tool we've evaluated
-    # currently exposes a way to tweak its knowledge base.
+    # --perturb also accepts kb_removal=... (reported by robustness for
+    # interpretation, never scored; omitted above -- no evaluated tool
+    # currently exposes a way to tweak its knowledge base).
     # --perturb also accepts adversarial_<trap_type>=... (a capture from a
     # trap-seeded prompt, e.g. adversarial_retracted_paper=trap1.json) plus
     # --adversarial-ground-truth traps.json, enabling the `adversarial` metric.

@@ -1,10 +1,11 @@
 """Evaluation context.
 
-The ``Context`` is passed to every metric and carries the shared services a
-metric may need — embeddings, an LLM judge, external database clients — plus the
-run configuration. Metrics depend on the *protocols* defined in
-``benchmarking_pipeline.services``, never on a concrete backend, so the choice of
-embedding model or judge model is swappable and does not leak into metric code.
+``Context`` is passed to every metric and carries the shared services a
+metric may need -- embeddings, an LLM judge, external database clients --
+plus the run configuration. Metrics depend on the protocols defined in
+``benchmarking_pipeline.services``, never a concrete backend, so the choice
+of embedding model or judge model is swappable and doesn't leak into metric
+code.
 """
 
 from __future__ import annotations

@@ -1,26 +1,24 @@
 """Epistemic calibration: does the tool distinguish established, contested, and
 uncertain claims?
 
-Two independent judgments per claim, then compared via an explicit scoring
-table (asymmetric — overconfidence is penalised harder than underconfidence,
-per the framework's own emphasis: "A poorly calibrated tool that presents
-speculative claims with the same confidence as established facts is... just as
-misleading as one that cites incorrectly"):
+Two independent judgments per claim, compared via an explicit scoring table
+(asymmetric -- overconfidence penalised harder than underconfidence, per the
+framework's emphasis: "A poorly calibrated tool that presents speculative
+claims with the same confidence as established facts is... just as misleading
+as one that cites incorrectly"):
 
-1. **Expressed confidence** — how confidently does the claim's own language
-   state it (high / moderate / low)? A single-text judge classification, same
-   shape as logical_consistency's role classification.
+1. **Expressed confidence** — how confidently the claim's own language states
+   it (high / moderate / low). Single-text judge classification, same shape
+   as logical_consistency's role classification.
 2. **Actual consensus** — searches the literature for the claim and asks the
    judge to classify its real status (established / contested / uncertain)
-   given that evidence, via the shared ``judge_relationship`` utility.
-   Grounded in a real search rather than the judge's own unverified background
-   knowledge, consistent with the rest of this benchmark's philosophy of
-   verifying rather than trusting an LLM's say-so.
+   against that evidence, via the shared ``judge_relationship`` utility.
+   Grounded in a real search rather than the judge's own background
+   knowledge.
 
 Degrades gracefully: no judge -> score is None. No literature client, or no
-search results for a given claim -> that claim's consensus can't be
-determined, so it's excluded from the mean and reported separately, not
-silently dropped and not scored via an unverified judge-only guess.
+search results for a claim -> that claim is excluded from the mean and
+reported separately, not scored via an unverified judge-only guess.
 """
 
 from __future__ import annotations

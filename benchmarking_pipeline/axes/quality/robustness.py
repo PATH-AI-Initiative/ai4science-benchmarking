@@ -3,43 +3,32 @@
 Compares the base run's comparison vector against each perturbation run's,
 grouped by perturbation type (tagged in ``run.metadata["perturbation"]``):
 
-* ``reword`` — a paraphrased prompt *should* leave outputs stable (high
-  similarity = genuine reasoning; low = surface pattern-matching). This is the
-  scored signal.
-
-# Not currently exercised: no tool we've evaluated exposes a way to tweak its
-# knowledge base, so there's nothing to point --perturb kb_removal=... at yet.
-# Left here (rather than deleted) because the scoring code below is already
-# perturbation-type-agnostic -- it costs nothing to keep, and this is the
-# design note for whenever a tool that supports it shows up:
-#
-# * ``kb_removal`` — removing a paper a hypothesis depends on *should* change
-#   the outputs (low similarity is the healthy response). Reported for
-#   interpretation, not folded into the score, and only feasible for
-#   open-knowledge-base tools.
+* ``reword`` — a paraphrased prompt should leave outputs stable (high
+  similarity = genuine reasoning; low = surface pattern-matching). This is
+  the scored signal.
+* ``kb_removal`` — removing a paper a hypothesis depends on should change the
+  outputs (low similarity is healthy). Reported for interpretation, not
+  scored; not currently exercised since no evaluated tool exposes a way to
+  tweak its knowledge base. Kept because the scoring code is already
+  perturbation-type-agnostic.
 
 What gets compared per run is ``config.multi_run_comparison`` (see
-``RunConfig``): the whole hypothesis set mean-pooled into one vector, or just
-the rank-1 hypothesis. Not yet settled which is the better default — both are
-available.
+``RunConfig``): the whole hypothesis set mean-pooled, or just the rank-1
+hypothesis. Default is unsettled -- both are available.
 
-In ``top_hypothesis`` mode specifically, embedding similarity turns out not to
-discriminate much at all (see ``reproducibility.py`` for the measurement this
-was found against: two unrelated research questions embed ~0.83, two runs
-proposing completely different drugs for the *identical* question still embed
-0.91-0.96). So when a judge is available, the *scored* signal is
-``reword_mechanism_match_rate`` -- not embedding similarity, and not a plain
-rank-1-vs-rank-1 match either: base's top idea reappearing at rank 2 in a
-reworded run is a different (better) outcome than it vanishing outright.
-Each perturbation run is checked via :func:`_shared.mechanism_match_credit`
-against base's top-``config.top_k_hypotheses``, credited by how far down the
-matching idea dropped. Embedding similarity
-(``reword_stability``/``similarity_by_perturbation``) is still computed and
-reported in full, just not treated as if it discriminates robustness on its
-own. Falls back to the embedding-based score when there's no judge, or in
-``whole_set`` mode.
+In ``top_hypothesis`` mode, embedding similarity barely discriminates (see
+``reproducibility.py``: two unrelated research questions embed ~0.83; two
+runs proposing different drugs for the identical question embed 0.91-0.96).
+So when a judge is available, the scored signal is
+``reword_mechanism_match_rate``, not embedding similarity -- and not a plain
+rank-1-vs-rank-1 match, since a top idea dropping to rank 2 is a different
+outcome than vanishing. Each perturbation run is checked via
+:func:`_shared.mechanism_match_credit` against base's top-k, credited by how
+far the matching idea dropped. Embedding similarity is still computed and
+reported, just not trusted as the discriminating signal. Falls back to it
+when there's no judge, or in ``whole_set`` mode.
 
-Implemented as a :class:`MultiRunMetric`: it reads ``bundle.base`` + ``bundle.perturbations``.
+Implemented as a :class:`MultiRunMetric`: reads ``bundle.base`` + ``bundle.perturbations``.
 """
 
 from __future__ import annotations

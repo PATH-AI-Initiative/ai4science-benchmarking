@@ -1,13 +1,12 @@
 """Shared pairwise relationship classification: "how does text A relate to text B?"
 
-Both logical consistency (claim vs. claim, within one hypothesis) and citation
-support-checking (a cited source vs. the claim it's attached to) reduce to the
-same operation: present two labelled pieces of text to the judge and constrain
-the verdict to a fixed set of relationship labels. Factoring it out here means
-both consume one prompt-construction path instead of duplicating it, while each
-caller still supplies its own semantically appropriate labels, framing, and
-choice set — a bidirectional claim-vs-claim check needs different choices than
-a directional source-vs-claim support check.
+Logical consistency (claim vs. claim) and citation support-checking (source
+vs. claim) both reduce to the same operation: present two labelled texts to
+the judge and constrain the verdict to a fixed set of relationship labels.
+Factored out here so both share one prompt-construction path, while each
+caller still supplies its own labels, framing, and choice set -- a
+bidirectional claim-vs-claim check needs different choices than a
+directional source-vs-claim check.
 """
 
 from __future__ import annotations

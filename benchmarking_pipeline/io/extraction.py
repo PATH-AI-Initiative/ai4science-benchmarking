@@ -1,38 +1,32 @@
 """LLM-assisted structured extraction from raw tool-report text.
 
-Co-scientist tools export reports in wildly different shapes (prose
-paragraphs, numbered lists, section headers), so a single rule-based parser
-can't cover them. This module asks a model to decompose the raw text into the
-same schema :func:`~benchmarking_pipeline.io.parsers.parse_dict` expects:
-ranked hypotheses, each broken into claims with their cited references.
+Co-scientist tools export reports in varied shapes (prose, numbered lists,
+section headers), so a single rule-based parser can't cover them. Asks a
+model to decompose the raw text into the schema
+:func:`~benchmarking_pipeline.io.parsers.parse_dict` expects: ranked
+hypotheses, each broken into claims with their cited references.
 
-Runs as two passes rather than one big structured-output call:
+Two passes rather than one big call:
 
 1. **List pass** — identify the hypotheses (text/category/self-reported
-   assessment), no claim decomposition yet. Cheap: proportional to the
-   document's hypothesis *titles*, not their full argument text.
-2. **Claims pass** — one focused call per hypothesis, asked to find that one
-   hypothesis in the full document and decompose only its argument into
-   claims/references/entities.
+   assessment), no claim decomposition yet. Cost scales with hypothesis
+   titles, not full argument text.
+2. **Claims pass** — one focused call per hypothesis: find it in the full
+   document and decompose its argument into claims/references/entities.
 
-A single call asked to do both across every hypothesis at once was tried
-first and silently under-delivers on documents with many rich hypotheses: a
-JSON-schema-constrained model can hit its output budget and still emit valid,
-complete-looking JSON by simply closing the hypotheses array early -- so a
-15-hypothesis report can come back with 2-4 hypotheses and no error at all.
-Splitting into one small call per hypothesis keeps each call's output bounded
-regardless of how many hypotheses the document has, at the cost of N+1 calls
-instead of 1 -- worthwhile for a draft that gets reviewed before use anyway.
+One call across all hypotheses at once under-delivers on documents with many
+hypotheses: a JSON-schema-constrained model can hit its output budget and
+still emit valid JSON by closing the hypotheses array early, so a
+15-hypothesis report can silently come back with 2-4. Splitting into one call
+per hypothesis bounds each call's output regardless of document size, at the
+cost of N+1 calls instead of 1.
 
-The output of :func:`extract_hypotheses` is a plain dict, meant to be written
-to disk and reviewed/edited by a human before it is used for scoring — this
-step produces the record the Accuracy axis will later check for hallucinated
-claims and citations, so an unreviewed extraction defeats the point of the
-benchmark. Treat it as a first draft, not a capture.
+:func:`extract_hypotheses` returns a plain dict meant to be reviewed by a
+human before use -- treat it as a draft, not a capture.
 
 Any :class:`~benchmarking_pipeline.services.structured_chat.StructuredChatClient`
-works here — Anthropic, OpenAI, or a local Ollama model — so extraction can run
-entirely offline if that's what the workflow needs.
+works here (Anthropic, OpenAI, or a local Ollama model), so extraction can
+run fully offline.
 """
 
 from __future__ import annotations

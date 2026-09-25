@@ -2,25 +2,22 @@
 uncritically incorporating them?
 
 Compares the base run against trap-seeded perturbation runs, the same
-base-vs-perturbation shape ``robustness`` already uses (``RunBundle.perturbations``,
-tagged via ``run.metadata["perturbation"]``) — a planted trap is just another
-kind of perturbation, so no new run-bundling machinery is needed.
+base-vs-perturbation shape ``robustness`` uses (``RunBundle.perturbations``,
+tagged via ``run.metadata["perturbation"]``) -- a planted trap is just
+another kind of perturbation.
 
 Each perturbation run's type is looked up in ``config.adversarial_traps``
 (perturbation type -> planted-issue description, e.g. a retracted paper cited
-as legitimate, a known-negative result reframed as an open question, or an
-internally contradictory premise); a run whose type has no matching entry is
-skipped rather than guessed at. For each matched run, the judge classifies the
-tool's full output against the planted description as ``flagged`` (the output
-identifies, questions, or declines to rely on the issue) or ``not_flagged``
-(the output uses or builds on it as if it were sound). Score is the fraction
-flagged; an unparseable verdict defaults to ``not_flagged`` — the same
-conservative-default choice ``_shared.judge_mechanism_match`` makes when a
-judge's answer can't be read as one of the offered choices.
+as legitimate, a negative result reframed as open, or a contradictory
+premise); a run with no matching entry is skipped. For each matched run, the
+judge classifies the tool's full output against the planted description as
+``flagged`` (identifies, questions, or declines to rely on the issue) or
+``not_flagged`` (uses or builds on it as sound). Score is the fraction
+flagged; an unparseable verdict defaults to ``not_flagged``, the same
+conservative default ``_shared.judge_mechanism_match`` uses.
 
-Degrades gracefully: no judge -> score is None. No traps configured, or no
-perturbation runs whose type matches a configured trap -> score is None
-rather than silently scoring zero traps.
+Degrades gracefully: no judge, no traps configured, or no perturbation runs
+matching a configured trap -> score is None.
 """
 
 from __future__ import annotations

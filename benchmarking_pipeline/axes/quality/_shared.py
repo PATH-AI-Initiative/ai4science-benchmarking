@@ -1,9 +1,9 @@
 """Shared helpers for reproducibility/robustness: turn one run's output into a
-single comparison vector, per ``config.multi_run_comparison`` (see RunConfig),
-and (for ``top_hypothesis`` mode) a judge-based, rank-aware check for whether
-two runs' top ideas are the same core proposal -- not just whether their
-rank-1 hypotheses match, but whether a run's top idea survives anywhere in
-the other run's top-k (``config.top_k_hypotheses``), credited by how far it
+single comparison vector, per ``config.multi_run_comparison`` (see
+``RunConfig``), and (for ``top_hypothesis`` mode) a judge-based, rank-aware
+check for whether two runs' top ideas are the same core proposal -- not just
+whether rank-1 matches, but whether a run's top idea survives anywhere in the
+other run's top-k (``config.top_k_hypotheses``), credited by how far it
 dropped.
 """
 
@@ -21,10 +21,9 @@ def hypothesis_text(hyp: Hypothesis) -> str:
     """``hyp.text`` enriched with its claims.
 
     Extraction often leaves ``hyp.text`` as just a short title (e.g. "H1 --
-    Force the heme feed") with the substantive content living entirely in its
-    claims instead -- a bare title gives embedding similarity and the
-    mechanism-match judge very little to actually compare on. Same problem
-    ``size_of_leap._search_query`` solved for literature search queries.
+    Force the heme feed"), with the substantive content in its claims
+    instead -- a bare title gives embedding similarity and the
+    mechanism-match judge little to compare on.
     """
     if not hyp.claims:
         return hyp.text
@@ -83,16 +82,15 @@ Default to different_mechanism unless clearly the same core proposal.
 
 
 def judge_mechanism_match(judge, hyp_a_text: str, hyp_b_text: str) -> str:
-    """Is ``hyp_a_text`` and ``hyp_b_text`` genuinely the same core proposal?
+    """Are ``hyp_a_text`` and ``hyp_b_text`` genuinely the same core proposal?
 
-    In ``top_hypothesis`` mode, this is the *scored* signal for reproducibility/
-    robustness when a judge is available -- measured directly, embedding
-    similarity barely discriminates "same narrow research question" from "same
-    specific proposal" (two unrelated research questions embed ~0.83 cosine
-    similarity; two runs proposing completely different drugs for the
-    *identical* question still embed 0.91-0.96), so it's reported as context
-    (``mean_pairwise_similarity``/``reword_stability``) rather than trusted as
-    the discriminating number on its own.
+    In ``top_hypothesis`` mode, this is the scored signal for reproducibility/
+    robustness when a judge is available -- embedding similarity barely
+    discriminates "same research question" from "same specific proposal"
+    (two unrelated questions embed ~0.83 cosine similarity; two runs
+    proposing different drugs for the identical question still embed
+    0.91-0.96), so it's reported as context rather than trusted as the
+    discriminating number.
     """
     return judge_relationship(
         judge,
@@ -106,22 +104,17 @@ def judge_mechanism_match(judge, hyp_a_text: str, hyp_b_text: str) -> str:
 def mechanism_match_credit(
     judge, top_a: list[Hypothesis], top_b: list[Hypothesis],
 ) -> tuple[float, dict]:
-    """How well does A's rank-1 idea survive *anywhere* in B's top-k, and
-    vice versa -- not just whether A's rank-1 equals B's rank-1.
+    """How well does A's rank-1 idea survive anywhere in B's top-k, and vice
+    versa -- not just whether A's rank-1 equals B's rank-1.
 
-    A tool whose top idea drops from rank 1 to rank 2 between runs is doing
-    something meaningfully different from a tool whose top idea vanishes
-    entirely, but a strict rank-1-vs-rank-1 comparison scores both as a flat
-    miss. This checks A's rank-1 against every hypothesis in B's top-k (and
-    B's rank-1 against every hypothesis in A's top-k), crediting a match at
-    rank r as ``1/r`` -- full credit for still being ranked first, partial
-    credit for surviving but demoted, zero if it isn't in the top-k at all.
-    The two directional credits are averaged for a single symmetric score.
+    A top idea dropping from rank 1 to rank 2 is meaningfully different from
+    vanishing entirely, but a strict rank-1-vs-rank-1 comparison scores both
+    as a flat miss. Checks A's rank-1 against every hypothesis in B's top-k
+    (and vice versa), crediting a match at rank r as ``1/r``. The two
+    directional credits are averaged for a single symmetric score.
 
-    A[0] vs B[0] is needed for both directions and asked only once. Every
-    other comparison assumes ``judge_mechanism_match`` is direction-symmetric
-    (same verdict regardless of which hypothesis is labeled "A" vs "B") to
-    avoid asking the same question in both directions.
+    A[0] vs B[0] is asked only once and reused for both directions, since
+    ``judge_mechanism_match`` is assumed direction-symmetric.
     """
     a_to_b = [judge_mechanism_match(judge, hypothesis_text(top_a[0]), hypothesis_text(hb)) for hb in top_b]
     b_to_a = [
@@ -148,11 +141,11 @@ def mechanism_anchor(
     labels: tuple[str, str, str] = ("highly reproducible", "reproducible with some variation", "low reproducibility"),
 ) -> str:
     """Human-readable anchor for a mechanism-match-rate score, e.g. from
-    :func:`judge_mechanism_match` aggregated across run pairs. Always names the
-    embedding similarity alongside it, since that number is still worth
-    seeing -- just not as the thing being scored. ``labels`` are (high, mid,
-    low) tier names -- override for a caller whose own vocabulary differs
-    (e.g. robustness's "stable under rewording" instead of "reproducible")."""
+    :func:`judge_mechanism_match` aggregated across run pairs. Always names
+    the embedding similarity alongside it, since it's still worth seeing --
+    just not as the thing being scored. ``labels`` are (high, mid, low) tier
+    names -- override for a caller whose vocabulary differs (e.g.
+    robustness's "stable under rewording")."""
     high, mid, low = labels
     if rate >= 0.8:
         base = high

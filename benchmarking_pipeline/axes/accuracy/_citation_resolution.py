@@ -2,14 +2,13 @@
 ``citation_support``.
 
 Both metrics need the same existence + title-match check before doing
-anything metric-specific with the result: accuracy scores existence itself;
-support checks whether the resolved paper's abstract backs the specific claim
-it's attached to. Resolving independently in each metric would hit the
-literature API and the title-match judge call twice per citation, so results
-are cached on ``ctx.citation_cache``, keyed by the reference's own identity
-(DOI, or else title/raw text) -- independent of which claim or hypothesis
-cites it, and safe regardless of which metric runs first since both read/fill
-the cache the same way.
+anything metric-specific: accuracy scores existence itself; support checks
+whether the resolved paper's abstract backs its claim. Resolving
+independently in each would hit the literature API and title-match judge
+call twice per citation, so results are cached on ``ctx.citation_cache``,
+keyed by the reference's identity (DOI, or else title/raw text) -- safe
+regardless of which metric runs first, since both read/fill the cache the
+same way.
 """
 
 from __future__ import annotations

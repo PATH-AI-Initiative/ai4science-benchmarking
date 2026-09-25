@@ -2,13 +2,13 @@
 
 Every scored or descriptive check is a :class:`Metric`. New metrics can be
 developed, tested, and contributed independently; the scoring layer composes
-them without knowing anything about their internals.
+them without knowing their internals.
 
-The framework distinguishes two granularities, so there are two base classes:
+Two granularities, two base classes:
 
-* :class:`HypothesisMetric` scores one hypothesis (e.g. citation accuracy,
+* :class:`HypothesisMetric` scores one hypothesis (citation accuracy,
   logical consistency, tractability).
-* :class:`SetMetric` scores the output set as a whole (e.g. diversity of ideas,
+* :class:`SetMetric` scores the output set as a whole (diversity,
   reproducibility).
 """
 
