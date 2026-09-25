@@ -82,6 +82,23 @@ a real model before drawing scientific conclusions.
 
 ## Usage
 
+### Quickstart
+
+`examples/example_capture.json` is a small synthetic capture (two
+textbook-mechanism hypotheses, not real tool output) so you can see the
+pipeline run with zero setup — no API key, no captured data of your own:
+
+```bash
+uv run benchmarking run --tool "Example Tool" \
+  --output examples/example_capture.json \
+  --prompt "novel therapeutic mechanisms for metabolic disease" \
+  --out results.json
+```
+
+`diversity` scores for real out of the box (`HashingEmbedding` needs no
+service). Everything else reports "not assessed" until you attach a
+literature client, biodb client, and/or judge — see *Scoring* below.
+
 ### Capturing a tool's output
 
 Already in the JSON shape below? Skip to *Scoring*. Otherwise, draft a
@@ -118,3 +135,22 @@ Input capture format (`--output` for `run`, and what `extract` produces):
   ]
 }
 ```
+
+### Scoring
+
+Attach whichever services you want the run scored against — see *Status*
+above for what each metric needs:
+
+```bash
+uv sync --extra openai --extra local-embeddings
+export OPENAI_API_KEY=...
+uv run benchmarking run --tool "My Tool" --output captured_output.json \
+  --prompt "..." \
+  --embeddings specter2 --judge openai --literature composite --biodb uniprot \
+  --out results.json
+```
+
+Add reproducibility/robustness by passing repeated and/or reworded captures
+of the same prompt (`--repeat`, `--perturb reword=...`); see `benchmarking
+run --help` for the full flag list, including `--multi-run-comparison` and
+`--adversarial-ground-truth`.
