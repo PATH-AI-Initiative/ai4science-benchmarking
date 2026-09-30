@@ -3,6 +3,7 @@ name = "ai4science-benchmarking"
 version = "0.1.0"
 description = "Modular, open-source benchmarking suite for evaluating AI co-scientist tools (Next GenAI Cures)."
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3.13"
 authors = [
     { name = "Snigdha Sen", email = "snsen@path.org" },
