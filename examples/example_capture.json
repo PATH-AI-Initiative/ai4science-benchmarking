@@ -1,0 +1,60 @@
+{
+  "hypotheses": [
+    {
+      "id": "h1",
+      "rank": 1,
+      "text": "Metformin improves skeletal muscle insulin sensitivity via AMPK activation",
+      "claims": [
+        {
+          "text": "Metformin inhibits mitochondrial complex I, which activates AMP-activated protein kinase (AMPK) in skeletal muscle.",
+          "role": "mechanistic_step",
+          "references": [
+            {"raw": "Zhou G, et al. Role of AMP-activated protein kinase in mechanism of metformin action. J Clin Invest. 2001.",
+             "title": "Role of AMP-activated protein kinase in mechanism of metformin action",
+             "year": 2001}
+          ],
+          "entities": [
+            {"name": "AMPK", "kind": "protein"},
+            {"name": "Metformin", "kind": "drug"}
+          ]
+        },
+        {
+          "text": "AMPK activation increases GLUT4 translocation to the cell membrane, improving glucose uptake in skeletal muscle.",
+          "role": "mechanistic_step",
+          "entities": [
+            {"name": "GLUT4", "kind": "protein"}
+          ]
+        },
+        {
+          "text": "Improved skeletal muscle glucose uptake should lower fasting blood glucose in type 2 diabetes.",
+          "role": "prediction"
+        }
+      ]
+    },
+    {
+      "id": "h2",
+      "rank": 2,
+      "text": "Statins lower cardiovascular risk primarily through HMG-CoA reductase inhibition",
+      "claims": [
+        {
+          "text": "Statins competitively inhibit HMG-CoA reductase (HMGCR), the rate-limiting enzyme in hepatic cholesterol biosynthesis.",
+          "role": "mechanistic_step",
+          "references": [
+            {"raw": "Goldstein JL, Brown MS. Regulation of the mevalonate pathway. Nature. 1990.",
+             "title": "Regulation of the mevalonate pathway", "year": 1990}
+          ],
+          "entities": [
+            {"name": "HMGCR", "kind": "protein"}
+          ]
+        },
+        {
+          "text": "Reduced hepatic cholesterol synthesis upregulates LDL receptor expression, increasing plasma LDL clearance.",
+          "role": "mechanistic_step",
+          "entities": [
+            {"name": "LDLR", "kind": "protein"}
+          ]
+        }
+      ]
+    }
+  ]
+}

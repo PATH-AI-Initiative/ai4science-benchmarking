@@ -3,6 +3,18 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+.venv/
+
+.DS_Store
+claude.md
+data/
+
+# Personal/exploratory visualization notebooks -- not load-bearing for V1
+# (the write-up's parameter/formula detail covers replicability), and keeping
+# them out avoids having to remember to clear real-data outputs before every
+# commit. Revisit for a later version once they're worth polishing and sharing.
+notebooks/
+
 # C extensions
 *.so
 
