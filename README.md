@@ -36,8 +36,7 @@ benchmarking_pipeline/
 ### Design principles
 
 - **Metrics are pluggable.** Subclass `HypothesisMetric`, `SetMetric`, or
-  `MultiRunMetric`, set `axis`, decorate with `@register`. That's the whole
-  contract.
+  `MultiRunMetric`, set `axis`, decorate with `@register`. 
 - **Services are behind protocols.** Embedding model, judge model, and
   database clients are chosen per run and attached to `Context`; no metric
   depends on a concrete backend. None is attached by default (`--judge none`
@@ -46,7 +45,7 @@ benchmarking_pipeline/
   SciBERT) / `OpenAIEmbedding` / `OllamaEmbedding` / `HashingEmbedding`
   (placeholder). Judge and extraction backends share one
   `StructuredChatClient` primitive (`services/structured_chat.py`). Pin your
-  choices for a defensible benchmark.
+  choices for a concrete benchmark.
 - **Rubric rules live in one place.** Safety gate, top-k best-hypothesis
   focus, and weighting are all in `core/scoring.py`, driven by `RunConfig`.
 
@@ -67,8 +66,7 @@ report "not assessed":
 | `diversity` | embeddings |
 | `adversarial` | judge + `--adversarial-ground-truth` |
 
-`tractability` and `safety` are stubs — both need a domain expert's
-judgement (SME review, red-team detection), not just more code. See each
+`tractability` and `safety` are currently stubs, will be expanded in future versions. See each
 module's docstring for the planned design.
 
 Multi-run metrics score via `evaluate_bundle(RunBundle, ctx)`, where a
@@ -86,7 +84,7 @@ a real model before drawing scientific conclusions.
 
 `examples/example_capture.json` is a small synthetic capture (two
 textbook-mechanism hypotheses, not real tool output) so you can see the
-pipeline run with zero setup — no API key, no captured data of your own:
+pipeline run with zero setup — no API key or captured data of your own required:
 
 ```bash
 uv run benchmarking run --tool "Example Tool" \
@@ -101,10 +99,10 @@ literature client, biodb client, and/or judge — see *Scoring* below.
 
 ### Capturing a tool's output
 
-Already in the JSON shape below? Skip to *Scoring*. Otherwise, draft a
+If your output os already in the JSON shape below, skip to *Scoring*. Otherwise, draft a
 captured JSON from an exported docx/PDF report with an LLM-assisted
 extraction pass — review the claims and references before scoring against
-it, this is a draft, not ground truth:
+it - this is a draft, not ground truth:
 
 ```bash
 uv sync --extra openai
