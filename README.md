@@ -1,4 +1,4 @@
-# ai4science-benchmarking
+# AI Co-Scientist Benchmarking Suite
 
 A modular, open-source benchmarking suite for evaluating AI co-scientist tools.
 
@@ -154,3 +154,10 @@ Add reproducibility/robustness by passing repeated and/or reworded captures
 of the same prompt (`--repeat`, `--perturb reword=...`); see `benchmarking
 run --help` for the full flag list, including `--multi-run-comparison` and
 `--adversarial-ground-truth`.
+
+## Acknowledgements
+
+
+This work was supported through AI for Development Science Breakthroughs (AI4DSB), funded by the UK Government's Foreign, Commonwealth & Development Office (FCDO) through its Global Research and Technology Development (GRTD) portfolio. The views expressed do not necessarily reflect the UK government’s official policies.
+<img width="468" height="82" alt="image" src="https://github.com/user-attachments/assets/7a76d4d7-6c7a-4c93-8ff9-13afafddf258" />
+
