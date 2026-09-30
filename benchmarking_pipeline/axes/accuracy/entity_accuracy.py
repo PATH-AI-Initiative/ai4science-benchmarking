@@ -14,21 +14,32 @@ because ``kind`` is free text an LLM extraction fills in, and an allowlist of
 just "gene"/"protein" would silently miss real proteins tagged otherwise.
 Skipped entities are reported, not dropped.
 
+Extraction sometimes leaves ``kind`` blank rather than mislabeling it, and a
+blank kind matches nothing in the blocklist -- so a drug ("artemisinin"), a
+species ("Annona muricata"), or a research method ("metabolomics") can still
+reach UniProt unfiltered. When a judge is available, a blank-kind entity is
+classified once before any lookup is attempted -- a cheap single-text check,
+only spent on entities the kind-based blocklist couldn't already rule out.
+
 Two failure modes, both handled:
 
 1. **Wrong-species ortholog.** A bare name like "DHODH" isn't
    species-specific -- UniProt indexes each organism's ortholog as a separate
    record. When a claim also names a species/organism, that name is passed to
-   ``ctx.biodb.resolve`` as an organism hint (falls back to the unqualified
-   query if the hint finds nothing -- see ``biodb.py``).
-2. **Coincidental free-text match.** A search can return an unrelated record
-   that merely shares descriptive wording -- the same false-positive class
-   ``citation_accuracy`` and ``size_of_leap`` guard against. When a judge is
-   available, a resolved record is checked for genuine identity before it
-   counts as existing.
+   ``ctx.biodb`` as an organism hint (falls back to the unqualified query if
+   the hint finds nothing -- see ``biodb.py``).
+2. **Coincidental free-text match.** A bare free-text query's single top
+   result can be an unrelated record that merely shares descriptive wording,
+   the same false-positive class ``citation_accuracy`` and ``size_of_leap``
+   guard against. Rather than committing to that top hit,
+   ``ctx.biodb.resolve_candidates`` returns several ranked candidates and,
+   when a judge is available, they're checked in order for genuine identity
+   -- stopping at the first real match rather than rejecting the entity just
+   because UniProt's own text-relevance ranking put the wrong record first.
 
 Degrades gracefully: no entities, or no biodb client -> ``score`` is
-``None``. No judge -> identity check is skipped, record trusted at face value.
+``None``. No judge -> identity check is skipped, the top-ranked candidate is
+trusted at face value.
 """
 
 from __future__ import annotations
@@ -42,6 +53,15 @@ from ...services.relationship_judge import judge_relationship
 _NOT_A_GENE_OR_PROTEIN_KINDS = {
     "species", "organism", "cell line", "drug", "compound", "chemical",
     "pathway", "disease", "algorithm", "phenotype",
+    # Found scoring real captures: these describe something other than a
+    # single resolvable gene/protein record (a multi-protein complex, a
+    # structural sub-region, a process, a drug class or regimen, ...), so a
+    # UniProt lookup is a category error the same way "species" already was
+    # -- it was never going to resolve to one correct record.
+    "protein complex", "complex", "protein substructure", "organelle",
+    "biochemical process", "process", "drug class", "compound/class",
+    "drug protocol", "life cycle stage", "toxicity endpoint", "adverse effect",
+    "mutation",
 }
 _SPECIES_KINDS = {"species", "organism"}
 
@@ -74,14 +94,51 @@ def _judge_entity_match(judge, queried_name: str, candidate_name: str) -> str:
     )
 
 
-def _organism_hint(claim: Claim) -> str | None:
-    """The first species/organism entity co-occurring in this claim, if any
-    -- a claim's gene/protein mentions are routinely discussed alongside the
-    organism they're about (e.g. "P. knowlesi already shows greater
-    susceptibility to dihydrofolate reductase inhibitors")."""
+_ENTITY_KIND_CHOICES = ["gene_or_protein", "other"]
+
+_ENTITY_KIND_PROMPT = """\
+Classify whether this named entity, as used in a scientific hypothesis, refers \
+to a specific gene or protein -- choose exactly one:
+- gene_or_protein: a specific gene, protein, enzyme, or protein complex subunit \
+(e.g. "DHODH", "cytochrome b", "K13", "ATP4").
+- other: anything else -- a drug/compound (e.g. "artemisinin"), a species or \
+organism (e.g. "Annona muricata"), a cell type/state, a biological process, a \
+research method, or a drug class/protocol.
+Default to gene_or_protein unless clearly something else.
+
+Entity: "{name}"
+"""
+
+
+def _judge_is_gene_or_protein(judge, entity_name: str) -> bool:
+    """True unless the judge is clearly convinced otherwise -- an unnecessary
+    lookup costs a wasted API call the downstream identity-match check
+    catches anyway, but wrongly skipping a real gene/protein costs a
+    dropped accuracy check with no way to recover it. An unparseable verdict
+    gets the same benefit of the doubt."""
+    verdict = judge.judge(_ENTITY_KIND_PROMPT.format(name=entity_name),
+                          choices=_ENTITY_KIND_CHOICES).verdict
+    return verdict != "other"
+
+
+def _organism_hint(claim: Claim, hypothesis: Hypothesis) -> str | None:
+    """A species/organism entity to disambiguate a bare gene/protein name
+    against. Prefers one co-occurring in this claim -- a gene mention is
+    routinely discussed alongside the organism it's about in the same
+    sentence (e.g. "P. knowlesi already shows greater susceptibility to
+    dihydrofolate reductase inhibitors") -- but falls back to any
+    species/organism named elsewhere in the same hypothesis: a hypothesis
+    decomposes into several claims that don't each repeat context a sibling
+    claim already established (observed for real: a claim naming
+    "cytochrome b" with no species of its own, in a hypothesis whose other
+    claims establish it's about Plasmodium knowlesi)."""
     for entity in claim.entities:
         if (entity.kind or "").strip().lower() in _SPECIES_KINDS:
             return entity.name
+    for other_claim in hypothesis.claims:
+        for entity in other_claim.entities:
+            if (entity.kind or "").strip().lower() in _SPECIES_KINDS:
+                return entity.name
     return None
 
 
@@ -114,13 +171,35 @@ class EntityAccuracy(HypothesisMetric):
                 skipped.append({"entity": entity.name, "kind": entity.kind,
                                "reason": "not_a_gene_or_protein"})
                 continue
+            if not kind and ctx.judge is not None and not _judge_is_gene_or_protein(ctx.judge, entity.name):
+                skipped.append({"entity": entity.name, "kind": entity.kind,
+                               "reason": "not_a_gene_or_protein_per_judge"})
+                continue
 
-            record = ctx.biodb.resolve(entity.name, entity.kind, organism=_organism_hint(claim))
-            exists = record.exists
-            identity_match = None
-            if exists and ctx.judge is not None and record.canonical_name:
-                identity_match = _judge_entity_match(ctx.judge, entity.name, record.canonical_name)
-                exists = identity_match == "same_entity"
+            candidates = ctx.biodb.resolve_candidates(entity.name, entity.kind,
+                                                      organism=_organism_hint(claim, hypothesis))
+            if not candidates:
+                checked.append({
+                    "entity": entity.name, "kind": entity.kind, "exists": False,
+                    "normalized_id": None, "canonical_name": None, "identity_match": None,
+                })
+                continue
+
+            top = candidates[0]
+            record, exists, identity_match = top, True, None
+            if ctx.judge is not None and top.canonical_name:
+                # Walk ranked candidates best-match-first; stop at the first
+                # one that's genuinely the entity meant, rather than
+                # rejecting outright just because UniProt's own text-
+                # relevance ranking put the wrong record first.
+                matched = next(
+                    (c for c in candidates if c.canonical_name
+                     and _judge_entity_match(ctx.judge, entity.name, c.canonical_name) == "same_entity"),
+                    None,
+                )
+                record = matched if matched is not None else top
+                identity_match = "same_entity" if matched is not None else "different_entity"
+                exists = matched is not None
 
             checked.append({
                 "entity": entity.name, "kind": entity.kind, "exists": exists,

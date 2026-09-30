@@ -36,6 +36,17 @@ class BioDatabase(Protocol):
         """
         ...
 
+    def resolve_candidates(
+        self, name: str, kind: str | None = None, organism: str | None = None, limit: int = 5,
+    ) -> list[EntityRecord]:
+        """Up to ``limit`` ranked candidate records for ``name`` (organism-
+        qualified first, if given), instead of committing to a single top
+        hit. Lets the caller (see ``entity_accuracy``) judge-gate through
+        them in ranked order -- a bare free-text query's top hit can be a
+        coincidental match sharing generic wording, not the entity meant.
+        """
+        ...
+
 
 def _uniprot_canonical_name(entry: dict) -> str | None:
     """Best-effort human-readable name from a UniProtKB entry's nested JSON.
@@ -93,39 +104,44 @@ class UniProtClient:
         self._client = client or httpx.Client(timeout=timeout)
 
     def resolve(self, name: str, kind: str | None = None, organism: str | None = None) -> EntityRecord:
-        if organism:
-            qualified = self._search(name, query=f'{name} AND organism_name:"{organism}"')
-            if qualified is not None:
-                return qualified
-        return self._search(name, query=name) or EntityRecord(
+        candidates = self.resolve_candidates(name, kind, organism, limit=1)
+        return candidates[0] if candidates else EntityRecord(
             query=name, normalized_id=None, canonical_name=None, exists=False,
         )
 
-    def _search(self, name: str, *, query: str) -> EntityRecord | None:
-        """Runs ``query`` against the API. Returns ``None`` (not a "doesn't
-        exist" EntityRecord) on no results or an HTTP error, so the caller
-        can distinguish "this specific query found nothing" from "this
-        entity doesn't exist at all" and fall back to a broader query."""
+    def resolve_candidates(
+        self, name: str, kind: str | None = None, organism: str | None = None, limit: int = 5,
+    ) -> list[EntityRecord]:
+        if organism:
+            qualified = self._search(name, query=f'{name} AND organism_name:"{organism}"', limit=limit)
+            if qualified:
+                return qualified
+        return self._search(name, query=name, limit=limit)
+
+    def _search(self, name: str, *, query: str, limit: int) -> list[EntityRecord]:
+        """Runs ``query`` against the API, returning up to ``limit`` ranked
+        candidates (empty list, not an error, on no results or an HTTP
+        error -- the caller distinguishes "this specific query found
+        nothing" from "this entity doesn't exist at all" by whether it has
+        a broader query left to fall back to)."""
         params = {
             "query": query,
             "format": "json",
             "fields": "accession,gene_names,protein_name,organism_name",
-            "size": 1,
+            "size": limit,
         }
         try:
             resp = self._client.get(self._BASE, params=params)
             resp.raise_for_status()
         except httpx.HTTPError:
-            return None
+            return []
 
-        results = resp.json().get("results", [])
-        if not results:
-            return None
-
-        entry = results[0]
-        return EntityRecord(
-            query=name,
-            normalized_id=entry.get("primaryAccession"),
-            canonical_name=_uniprot_canonical_name(entry),
-            exists=True,
-        )
+        return [
+            EntityRecord(
+                query=name,
+                normalized_id=entry.get("primaryAccession"),
+                canonical_name=_uniprot_canonical_name(entry),
+                exists=True,
+            )
+            for entry in resp.json().get("results", [])
+        ]

@@ -23,36 +23,57 @@ METRIC = EntityAccuracy()
 
 
 class FakeBioDatabase:
-    """Keyed by entity name -> EntityRecord (or None -> not found). Records
-    every ``resolve`` call (including the organism hint passed) for tests
-    that need to assert on it."""
+    """Keyed by entity name -> EntityRecord, a list of EntityRecord (ranked
+    candidates), or None -> not found. Records every ``resolve_candidates``
+    call (including the organism hint passed) for tests that need to assert
+    on it."""
 
     name = "fake"
 
-    def __init__(self, records: dict[str, EntityRecord | None]):
+    def __init__(self, records: dict[str, EntityRecord | list[EntityRecord] | None]):
         self._records = records
         self.calls: list[tuple[str, str | None, str | None]] = []
 
     def resolve(self, name: str, kind: str | None = None, organism: str | None = None) -> EntityRecord:
+        candidates = self.resolve_candidates(name, kind, organism)
+        return candidates[0] if candidates else EntityRecord(
+            query=name, normalized_id=None, canonical_name=None, exists=False,
+        )
+
+    def resolve_candidates(
+        self, name: str, kind: str | None = None, organism: str | None = None, limit: int = 5,
+    ) -> list[EntityRecord]:
         self.calls.append((name, kind, organism))
         record = self._records.get(name)
-        if record is not None:
-            return record
-        return EntityRecord(query=name, normalized_id=None, canonical_name=None, exists=False)
+        if record is None:
+            return []
+        return record if isinstance(record, list) else [record]
 
 
 class FakeJudge:
-    """Returns "same_entity" for any candidate name in ``same_entity_names``,
-    "different_entity" otherwise (the safe default)."""
+    """Dispatches on ``choices`` to answer either judge call this metric
+    makes: the identity-match check ("same_entity" for any candidate name in
+    ``same_entity_names``, "different_entity" otherwise) or the blank-kind
+    classification ("other" for any entity name in ``other_kind_names``,
+    "gene_or_protein" otherwise -- the safe default)."""
 
     name = "fake"
 
-    def __init__(self, same_entity_names: set[str] = frozenset()):
+    def __init__(self, same_entity_names: set[str] = frozenset(),
+                other_kind_names: set[str] = frozenset()):
         self.same_entity_names = same_entity_names
+        self.other_kind_names = other_kind_names
         self.calls = 0
 
     def judge(self, prompt: str, *, choices=None) -> Judgement:
         self.calls += 1
+        if choices == ["gene_or_protein", "other"]:
+            verdict = "gene_or_protein"
+            for name in self.other_kind_names:
+                if name in prompt:
+                    verdict = "other"
+                    break
+            return Judgement(verdict=verdict, confidence=1.0)
         verdict = "different_entity"
         for candidate_name in self.same_entity_names:
             if candidate_name in prompt:
@@ -250,3 +271,152 @@ def test_no_cooccurring_species_means_no_organism_hint():
     METRIC.score(hyp, run, ctx)
 
     assert biodb.calls == [("DHODH", "enzyme", None)]
+
+
+def test_organism_hint_falls_back_to_a_sibling_claim_in_the_same_hypothesis():
+    """Regression test for a real case: a hypothesis's claims each cover a
+    different sub-point, so a species is only named once, in a different
+    claim than the gene/protein mention -- the gene-bearing claim itself has
+    no species tagged. The hint should still reach the biodb client rather
+    than being lost because it happened to land on a sibling claim."""
+    claims = [
+        Claim(text="Atovaquone is highly potent against Plasmodium knowlesi.",
+             entities=[Entity(name="Plasmodium knowlesi", kind="species")]),
+        Claim(text="Dual-site inhibition of bc1 requires mutations in cytochrome b.",
+             entities=[Entity(name="cytochrome b", kind="protein")]),
+    ]
+    hyp = Hypothesis(id="h1", text="...", rank=1, claims=claims)
+    run = EvaluationRun(tool=Tool(name="t"), prompt="p", outputs=HypothesisSet(hypotheses=[hyp]))
+    biodb = FakeBioDatabase({})
+    ctx = Context(config=RunConfig(), biodb=biodb)
+
+    METRIC.score(hyp, run, ctx)
+
+    cytb_calls = [c for c in biodb.calls if c[0] == "cytochrome b"]
+    assert cytb_calls == [("cytochrome b", "protein", "Plasmodium knowlesi")]
+
+
+def test_falls_through_to_next_candidate_when_top_hit_is_wrong():
+    """Regression test for a real case: querying "PI4K" against the live
+    UniProt API returned an unrelated human protein ("Hyccin 2") as the
+    single top hit on text overlap alone. Rather than rejecting the entity
+    outright, a second, genuinely-matching candidate further down the ranked
+    list should be found and used instead."""
+    wrong_top = EntityRecord(query="PI4K", normalized_id="Q8IXS8",
+                             canonical_name="Hyccin 2", exists=True)
+    real_match = EntityRecord(query="PI4K", normalized_id="P42356",
+                              canonical_name="Phosphatidylinositol 4-kinase alpha", exists=True)
+    claim = Claim(text="x", entities=[Entity(name="PI4K", kind="protein")])
+    hyp, run = _hyp([claim])
+    judge = FakeJudge(same_entity_names={"Phosphatidylinositol 4-kinase alpha"})
+    ctx = Context(config=RunConfig(),
+                 biodb=FakeBioDatabase({"PI4K": [wrong_top, real_match]}), judge=judge)
+
+    result = METRIC.score(hyp, run, ctx)
+    assert result.score == 1.0
+    assert result.evidence["checked"][0]["normalized_id"] == "P42356"
+    assert result.evidence["checked"][0]["identity_match"] == "same_entity"
+    assert judge.calls == 2  # top hit rejected, second hit checked and accepted
+
+
+def test_all_candidates_rejected_scores_zero_and_reports_the_top_one():
+    wrong_a = EntityRecord(query="X", normalized_id="A1", canonical_name="Unrelated protein A", exists=True)
+    wrong_b = EntityRecord(query="X", normalized_id="A2", canonical_name="Unrelated protein B", exists=True)
+    claim = Claim(text="x", entities=[Entity(name="X", kind="protein")])
+    hyp, run = _hyp([claim])
+    judge = FakeJudge(same_entity_names=set())  # everything rejected
+    ctx = Context(config=RunConfig(), biodb=FakeBioDatabase({"X": [wrong_a, wrong_b]}), judge=judge)
+
+    result = METRIC.score(hyp, run, ctx)
+    assert result.score == 0.0
+    assert result.evidence["checked"][0]["identity_match"] == "different_entity"
+    # Still reports the top candidate for review, not hidden just because rejected.
+    assert result.evidence["checked"][0]["normalized_id"] == "A1"
+    assert judge.calls == 2  # both candidates checked, none matched
+
+
+def test_non_atomic_entity_kinds_are_skipped():
+    """A protein complex, a structural sub-region, a process, or a drug class
+    is not a single resolvable gene/protein record -- looking it up is a
+    category error the same way "species" already is."""
+    claims = [
+        Claim(text="a", entities=[Entity(name="bc1 complex", kind="protein complex")]),
+        Claim(text="b", entities=[Entity(name="Qo site", kind="protein substructure")]),
+        Claim(text="c", entities=[Entity(name="mitochondrial", kind="organelle")]),
+        Claim(text="d", entities=[Entity(name="artemisinin activation", kind="biochemical process")]),
+        Claim(text="e", entities=[Entity(name="quinolones", kind="drug class")]),
+    ]
+    hyp, run = _hyp(claims)
+    ctx = Context(config=RunConfig(), biodb=FakeBioDatabase({}))
+
+    result = METRIC.score(hyp, run, ctx)
+    assert result.score is None
+    assert result.evidence["status"] == "no_lookupable_entities"
+    assert len(result.evidence["skipped"]) == 5
+
+
+def test_blank_kind_non_gene_entity_is_skipped_via_judge():
+    """Regression test for a real case: a drug name ("artemisinin"), a
+    species ("Annona muricata"), or a research method ("metabolomics") can
+    reach UniProt unfiltered when extraction leaves kind blank rather than
+    mislabeling it -- the kind-based blocklist has nothing to match against.
+    With a judge available, a blank-kind entity is classified before any
+    lookup is attempted."""
+    claim = Claim(text="x", entities=[Entity(name="artemisinin", kind="")])
+    hyp, run = _hyp([claim])
+    judge = FakeJudge(other_kind_names={"artemisinin"})
+    biodb = FakeBioDatabase({})
+    ctx = Context(config=RunConfig(), biodb=biodb, judge=judge)
+
+    result = METRIC.score(hyp, run, ctx)
+    assert result.score is None
+    assert result.evidence["status"] == "no_lookupable_entities"
+    assert result.evidence["skipped"][0]["reason"] == "not_a_gene_or_protein_per_judge"
+    assert biodb.calls == []  # never reached the biodb -- skipped before any lookup
+
+
+def test_blank_kind_gene_entity_still_proceeds_via_judge():
+    real = EntityRecord(query="DHODH", normalized_id="Q9NR33",
+                        canonical_name="Dihydroorotate dehydrogenase", exists=True)
+    claim = Claim(text="x", entities=[Entity(name="DHODH", kind="")])
+    hyp, run = _hyp([claim])
+    # other_kind_names empty -> DHODH classified as gene_or_protein (proceeds);
+    # same_entity_names covers the identity-match check that follows.
+    judge = FakeJudge(same_entity_names={"Dihydroorotate dehydrogenase"})
+    ctx = Context(config=RunConfig(), biodb=FakeBioDatabase({"DHODH": real}), judge=judge)
+
+    result = METRIC.score(hyp, run, ctx)
+    assert result.score == 1.0
+    assert result.evidence["skipped"] == []
+
+
+def test_labeled_kind_skips_the_judge_classification_entirely():
+    """The judge-classification step is only for blank kind -- an entity
+    already labeled (correctly or not) goes straight through the existing
+    kind-based blocklist/allowlist path, costing no extra judge call beyond
+    the identity-match check that already ran for it."""
+    real = EntityRecord(query="DHODH", normalized_id="Q9NR33",
+                        canonical_name="Dihydroorotate dehydrogenase", exists=True)
+    claim = Claim(text="x", entities=[Entity(name="DHODH", kind="gene")])
+    hyp, run = _hyp([claim])
+    judge = FakeJudge(same_entity_names={"Dihydroorotate dehydrogenase"})
+    ctx = Context(config=RunConfig(), biodb=FakeBioDatabase({"DHODH": real}), judge=judge)
+
+    result = METRIC.score(hyp, run, ctx)
+    assert result.score == 1.0
+    assert judge.calls == 1  # only the identity-match check, no kind classification
+
+
+def test_no_judge_skips_the_blank_kind_classification_entirely():
+    """No judge configured -> the blank-kind classification can't run either
+    -- graceful degradation, same as every other judge-optional check here:
+    the entity is still attempted, trusted at face value."""
+    real = EntityRecord(query="artemisinin", normalized_id="X1",
+                        canonical_name="Some record", exists=True)
+    claim = Claim(text="x", entities=[Entity(name="artemisinin", kind="")])
+    hyp, run = _hyp([claim])
+    ctx = Context(config=RunConfig(), biodb=FakeBioDatabase({"artemisinin": real}), judge=None)
+
+    result = METRIC.score(hyp, run, ctx)
+    assert result.score == 1.0
+    assert result.evidence["skipped"] == []
