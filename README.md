@@ -157,6 +157,10 @@ run --help` for the full flag list, including `--multi-run-comparison` and
 
 ## Acknowledgements
 
+<img src="docs/assets/grtd-logo.png" alt="Global Research and Technology Development, funded by UK Government" width="140" align="left" />
 
 This work was supported through AI for Development Science Breakthroughs (AI4DSB), funded by the UK Government's Foreign, Commonwealth & Development Office (FCDO) through its Global Research and Technology Development (GRTD) portfolio. The views expressed do not necessarily reflect the UK government’s official policies.
+
+<br clear="left" />
+
 
